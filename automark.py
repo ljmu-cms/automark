@@ -26,37 +26,44 @@ class Automark:
 			
 		# Load in the program from file
 		self.program = ""
+		foundMain = False
 		with open(filename) as file:
-			self.program = file.read()
+			for line in file.xreadlines():
+				if not line.startswith('package '):
+					if (not foundMain) and (line.find('public class') >= 0):
+						line = line.replace('public class', 'class', 1)
+						foundMain = True
+					if not (line.isspace() or (len(line) == 0)):
+						self.program += line
 
 		# Initialise the scoring state
 		self.commentScore = 0
-		self.variableScore = 0
+		self.variablesScore = 0
 		self.indentationScore = 0
 		self.executionScore = 0
 
 		self.commentScore = self.checkCommentQuality()
-		self.variableScore = self.checkVariableNameQuality()
+		self.variablesScore = self.checkVariableNameQuality()
 		self.executionScore = self.checkExecution()
 
 		print
 		print 'Final score: {:d}'.format(self.getTotalScore())
 
 	def getTotalScore(self):
-		totalScore = self.commentScore + self.variableScore + self.indentationScore + self.executionScore
+		totalScore = self.commentScore + self.variablesScore + self.indentationScore + self.executionScore
 		return totalScore
 
 	def getCommentScore(self):
-		return commentScore
+		return self.commentScore
 	
-	def getVariableScore(self):
-		return variableScore
+	def getVariablesScore(self):
+		return self.variablesScore
 		
 	def getIndentationScore(self):
-		return indentationScore
+		return self.indentationScore
 
 	def getExecutionScore(self):
-		return executionScore
+		return self.executionScore
 
 
 	def getErrorStatus(self, response):
@@ -198,11 +205,11 @@ class Automark:
 						strike += 1
 						print name
 		print 'Variable name strikes: {:d}'.format(strike)
-		variableScore = 1
+		variablesScore = 1
 		if strike >= 3:
-			variableScore = 0
-		print 'Variable name score: {:d}'.format(variableScore)
-		return variableScore
+			variablesScore = 0
+		print 'Variable name score: {:d}'.format(variablesScore)
+		return variablesScore
 
 	def checkExecution(self):
 		executionScore = 0
@@ -299,5 +306,5 @@ class Automark:
 
 		return executionScore		
 
-am = Automark('task.java', 'credentials.txt')
+#am = Automark('task.java', 'credentials.txt')
 
