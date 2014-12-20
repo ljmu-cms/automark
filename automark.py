@@ -31,11 +31,13 @@ class Automark:
 			for line in file.xreadlines():
 				if not line.startswith('package '):
 					if (not foundMain) and (line.find('public class') >= 0):
-						line = line.replace('public class', 'class', 1)
+						line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
+						#line = line.replace('public class', 'class', 1)
 						foundMain = True
 					if not (line.isspace() or (len(line) == 0)):
 						self.program += line
 
+		#print self.program
 		# Initialise the scoring state
 		self.commentScore = 0
 		self.variablesScore = 0
@@ -44,6 +46,7 @@ class Automark:
 
 		self.commentScore = self.checkCommentQuality()
 		self.variablesScore = self.checkVariableNameQuality()
+		self.indentationScore = self.checkIndentation()
 		self.executionScore = self.checkExecution()
 
 		print
@@ -211,6 +214,32 @@ class Automark:
 		print 'Variable name score: {:d}'.format(variablesScore)
 		return variablesScore
 
+	def checkIndentation(self):
+		lines = self.program.splitlines()
+		indentationErrors = 0
+		indent = 0
+		lineNum = 0
+		for line in lines:
+			add = line.count('{')
+			sub = line.count('}')
+			tabs = 0
+			while line[tabs] == '\t':
+				tabs += 1
+			indent -= sub
+			if indent != tabs:
+				indentationErrors += 1
+				print 'Indentation error {:d} (actual) vs. {:d} (expected) on line {:d}'.format(tabs, indent, lineNum)
+				indent = tabs
+			indent += add
+			lineNum += 1
+		if indentationErrors > 4:
+			indentatinoScore = 0
+		else:
+			indentatinoScore = 1
+		print 'Indentation score: {:d}'.format(indentatinoScore)
+		return indentatinoScore
+
+
 	def checkExecution(self):
 		executionScore = 0
 		# Creating wsdl client
@@ -283,7 +312,7 @@ class Automark:
 				stdErrOutput = self.getValue(response, 'stderr')
 				print 'Error output: ' + stdErrOutput
 			elif result == 15:
-				executionScore += 2
+				executionScore += 1
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				self.checkErrorStatus(response)
 				executionTime = self.getValue(response, 'time')

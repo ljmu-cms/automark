@@ -134,7 +134,7 @@ class HouseKeepingAutomark:
 				is_constructing_name_map = True
 
 
-start = time.clock()
+start = time.time()
 parser = argparse.ArgumentParser(description='Housekeeping for 4001COMP marking.')
 parser.add_argument('task', metavar='TASK', type=str, help='Task number (e.g. 1)')
 parser.add_argument('initials', metavar='INITIALS', type=str, help='Marker initials (e.g. PH)')
@@ -143,7 +143,7 @@ args = parser.parse_args()
 hk = HouseKeepingAutomark('feedback_username_task' + args.task + '.docx','4001COMP Marking 2014-15 CW1-T' + args.task + '.xlsx',args.initials)
 hk.go()
 
-end = time.clock()
-duration = start - end
+end = time.time()
+duration = end - start
 print 'Time taken: {}'.format(duration)
 
