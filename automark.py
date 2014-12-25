@@ -14,7 +14,8 @@ from SOAPpy import WSDL
 import time
 import re
 import random
-import plyj.parser as plyj
+import plyjext.parser as plyj
+import plyjext.model as model
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -49,13 +50,13 @@ class Automark:
 						characterPos += len(line)
 				linesRead += 1
 
+		# Stpre a line-delimited version of the program 
 		self.programLines = self.program.splitlines()
 		
+		# Store a AST version of the program
 		parser = plyj.Parser()
-		tree = parser.parse_string(self.program)
-		#print tree
+		self.programTree = parser.parse_string(self.program)
 
-		#print self.program
 		# Initialise the scoring state
 		self.commentScore = 0
 		self.variablesScore = 0
@@ -69,8 +70,7 @@ class Automark:
 		
 		print self.getErrorList()
 
-		print
-		print 'Final score: {:d}'.format(self.getTotalScore())
+		print 'Final score: {:d}\n'.format(self.getTotalScore())
 
 	def getTotalScore(self):
 		totalScore = self.commentScore + self.variablesScore + self.indentationScore + self.executionScore
@@ -117,7 +117,7 @@ class Automark:
 			print 'Running'
 
 	def getErrorList(self):
-		errorList = ""
+		errorList = ''
 		for error in self.errorList:
 			errorList += str(error[0]) + ' : ' + error[1] + '\n'
 		return errorList
@@ -177,9 +177,6 @@ class Automark:
 				previousEnd = self.lineFromCharacterNoSpace(blockComment.end()) + 1
 			gapSum += len(self.programLines) - previousEnd
 			gapAve = gapSum / float(commentCount)
-			print 'New comment count: ' + str(commentCount)
-			print 'New gap: ' + str(gapSum)
-			print 'New gap ave: ' + str(gapAve)
 
 			gapSumSquared = 0.0
 			previousEnd = 0
@@ -188,7 +185,6 @@ class Automark:
 				previousEnd = self.lineFromCharacterNoSpace(blockComment.end()) + 1
 			gapSumSquared += ((len(self.programLines) - previousEnd) - gapAve)**2.0
 			gapSD = (gapSumSquared / commentCount)**0.5
-			print 'New gap squared: ' + str(gapSumSquared)
 			
 			lastCommentLine = self.lineFromCharacter(blockComments[commentCount - 1].end())
 
@@ -204,32 +200,24 @@ class Automark:
 			self.errorList.append([lastCommentLine, 'Your comments should be included throughout your code'])
 		return commentScore
 
-	def getVariableName(self, line):
-		name = ''
-		# Collect the variable name using a regular expression
-		variable = re.sub(r'.*?(int|float|double|String)\s(.*?)[\s=;].*', r'\2', line)
-		#type = re.sub(r'.*?(int|float|double|String)\s(.*?)[\s=;].*', r'\1', line)
-		if variable != line:
-			name = str(variable)
-		return name
-
 	def checkVariableNameQuality(self):
+		findVars = VariableVisitor()
+		self.programTree.accept(findVars)
+		
 		strike = 0
 		name = ''
-		lineCount = 0
-		for line in self.programLines:
-			name = self.getVariableName(line)
+		for variable in findVars.variables:
+			name = variable[0]
 			if len(name) > 0:
 				if len(name) < 3:
 					strike += 1
 					if (strike == 3):
-						self.errorList.append([self.lineNumber[lineCount], 'Use clear and expressive variable names'])
+						self.errorList.append([variable[1], 'Use clear and expressive variable names'])
 				if re.search(r'\d+', name) != None:
 					if int(re.search(r'\d+', name).group()) > 0:
 						strike += 1
 						if (strike == 3):
-							self.errorList.append([self.lineNumber[lineCount], 'Use clear and expressive variable names'])
-			lineCount += 1
+							self.errorList.append([variable[1], 'Use clear and expressive variable names'])
 		#print 'Variable name strikes: {:d}'.format(strike)
 		variablesScore = 1
 		if strike >= 3:
@@ -361,6 +349,19 @@ class Automark:
 				print 'Internal error with the code checking system'
 
 		return executionScore		
+
+class VariableVisitor(model.Visitor):
+
+	def __init__(self, verbose=False):
+		super(VariableVisitor, self).__init__()
+		self.variables = []
+
+	def leave_VariableDeclaration(self, element):
+		#msg = 'Variable type ({}); name ({}); line no ({})'
+		#print msg.format(element.type, element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno)
+		self.variables.append([element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno])
+		return True
+
 
 #am = Automark('task.java', 'credentials.txt')
 
