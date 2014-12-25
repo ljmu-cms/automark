@@ -229,7 +229,7 @@ class Automark:
 		indentationErrors = 0
 		indent = 0
 		lineNum = 0
-		preChange = 0
+		firstError = 0
 		for line in self.programLines:
 			add = line.count('{')
 			sub = line.count('}')
@@ -237,20 +237,20 @@ class Automark:
 			while line[tabs] == '\t':
 				tabs += 1
 			indent -= sub
-			if (indent != tabs):
-				if (add == 0) and (sub == 0) and (tabs != preChange):
-					indentationErrors += 1
-					if indentationErrors > 4:
-						self.errorList.append([self.lineNumber[lineNum], 'Indentation error'])
-					preChange = tabs
+			if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == ' ')):
+				indentationErrors += 1
+				if indentationErrors <= 1:
+					firstError = lineNum
+				if indentationErrors > 3:
+					self.errorList.append([self.lineNumber[firstError], 'Indentation error'])
 				indent = tabs
 			indent += add
 			lineNum += 1
-		if indentationErrors > 4:
+		if indentationErrors > 3:
 			indentatinoScore = 0
 		else:
 			indentatinoScore = 1
-		print 'Indentation score: {:d}'.format(indentatinoScore)
+		print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, indentationErrors)
 		return indentatinoScore
 
 
