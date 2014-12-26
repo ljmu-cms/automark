@@ -36,7 +36,11 @@ class HouseKeepingAutomark:
 		#username to firstname lastname map/dictionary
 		self.name_map = {}
 		self.construct_name_map()
-		self.create_new_feedback_document()
+		with open('summary.csv', 'w') as self.summary:
+			self.outputcsv_co(['Username', 'Name'])
+			self.outputcsv_co(automark.Automark.getScoresStructure())
+			self.outputcsv_nl(automark.Automark.getInternalStatsStructure())
+			self.create_new_feedback_document()
 
 	#probably won't work for Windows
 	def unzip_submission(self, student_dir):
@@ -47,6 +51,24 @@ class HouseKeepingAutomark:
 		sys_process.wait()
 		std_out = sys_process.stdout.read().strip()
 		print std_out
+
+	def outputcsv(self, items):
+		count = 0
+		for item in items:
+			self.summary.write('\"')
+			self.summary.write(str(item))
+			self.summary.write('\"')
+			if count < (len(items) - 1):
+				self.summary.write(', ')
+			count += 1
+
+	def outputcsv_co(self, items):
+		self.outputcsv(items)
+		self.summary.write(', ')
+
+	def outputcsv_nl(self, items):
+		self.outputcsv(items)
+		self.summary.write('\n')
 
 	def automark (self, directory):
 		java_file = ''
@@ -75,6 +97,9 @@ class HouseKeepingAutomark:
 					print 'file: {}'.format(java_path)
 					marks = automark.Automark(java_path, 'credentials.txt')
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
+					self.outputcsv_co([student_dir_name, student_name])
+					self.outputcsv_co(marks.getScores())
+					self.outputcsv_nl(marks.getInternalStats())
 
 
 				#just do something extra

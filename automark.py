@@ -102,13 +102,22 @@ class Automark:
 	def getExecutionScore(self):
 		return self.executionScore
 
+	@staticmethod
+	def getScoresStructure():
+		return ['Execution', 'Indentation', 'Variables', 'Comments', 'Total']
+
 	def getScores(self):
-		# Solution score
+		# Execution score
 		# Indentation
 		# Variable names
 		# Comments
-		scores = [self.executionScore, self.indentationScore, self.variablesScore, self.commentScore]
+		# Total
+		scores = [self.executionScore, self.indentationScore, self.variablesScore, self.commentScore, self.getTotalScore()]
 		return scores
+
+	@staticmethod
+	def getInternalStatsStructure():
+		return ['Gap average', 'Gap SD', 'Variables short', 'Variables enumerated', 'Indentation errors', 'Execution time', 'Memory used', 'Execution result', 'Execution output', 'Output check 0', 'Output check 1']
 
 	def getInternalStats(self):
 		# Comment gap average
@@ -122,7 +131,7 @@ class Automark:
 		# Execution output
 		# Output check 0
 		# Output checl 1
-		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.executionResult, self.programOutput, self.outputCheck[0], self.outputCheck[1]]
+		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.executionResult, self.programOutput.encode('ascii', 'replace'), self.outputCheck[0], self.outputCheck[1]]
 		return stats
 
 	def getErrorStatus(self, response):
@@ -205,8 +214,8 @@ class Automark:
 		# Multiple full-line comments without other text are considered as a single match
 		blockComments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', self.program, (re.MULTILINE | re.DOTALL)))
 
-		gapAve = 1000.0
-		gapSD = 1000.0
+		self.commentGapAverage = 1000.0
+		self.commentGapSD = 1000.0
 		lastCommentLine = 0
 		commentCount = len(blockComments)
 		if commentCount > 0:
@@ -221,16 +230,16 @@ class Automark:
 			gapSumSquared = 0.0
 			previousEnd = 0
 			for blockComment in blockComments:
-				gapSumSquared += ((self.lineFromCharacterNoSpace(blockComment.start()) - previousEnd) - gapAve)**2.0
+				gapSumSquared += ((self.lineFromCharacterNoSpace(blockComment.start()) - previousEnd) - self.commentGapAverage)**2.0
 				previousEnd = self.lineFromCharacterNoSpace(blockComment.end()) + 1
-			gapSumSquared += ((len(self.programLines) - previousEnd) - gapAve)**2.0
+			gapSumSquared += ((len(self.programLines) - previousEnd) - self.commentGapAverage)**2.0
 			self.commentGapSD = (gapSumSquared / commentCount)**0.5
 			
 			lastCommentLine = self.lineFromCharacter(blockComments[commentCount - 1].end())
 
-		print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(gapAve, gapSD)
-		commentFrequency = max(1.0 - ((max(gapAve - 3.0, 0.0))/2.0), 0.0)
-		commentConsistency = max(1.0 - ((max(gapSD - 2.0, 0.0))/1.0), 0.0)
+		print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(self.commentGapAverage, self.commentGapSD)
+		commentFrequency = max(1.0 - ((max(self.commentGapAverage - 3.0, 0.0))/2.0), 0.0)
+		commentConsistency = max(1.0 - ((max(self.commentGapSD - 2.0, 0.0))/1.0), 0.0)
 		commentScore = int(round(commentFrequency + commentConsistency))
 		#print 'Comment score: {:d}'.format(commentScore)
 
@@ -300,7 +309,7 @@ class Automark:
 
 	def checkExecution(self):
 		executionScore = 0
-		return executionScore
+		#return executionScore
 		# Creating wsdl client
 		wsdlObject = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
 
