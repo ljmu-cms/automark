@@ -97,6 +97,7 @@ class HouseKeepingAutomark:
 					print 'file: {}'.format(java_path)
 					marks = automark.Automark(java_path, 'credentials.txt')
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
+					self.write_comments_to_document(student_dir, student_dir_name, marks)
 					self.outputcsv_co([student_dir_name, student_name])
 					self.outputcsv_co(marks.getScores())
 					self.outputcsv_nl(marks.getInternalStats())
@@ -142,6 +143,52 @@ class HouseKeepingAutomark:
 		self.feedback_document.tables[0].cell(1,2).text = self.marker_name
 		self.feedback_document.save(student_dir+'/'+filename)
 		#print student_dir+'/'+filename
+
+	def write_comments_to_document(self, student_dir, student_dir_name, marks):
+		filename = self.feedback_doc_name.replace('username', student_dir_name)
+		feedback_document = Document(student_dir+'/'+filename)
+		feedback_document.add_heading('Program Comments', 2)
+
+		feedback_document.add_heading('Program input', 3)
+		inputs = marks.getInput().splitlines()
+
+		for line in inputs:
+			feedback_document.add_paragraph(line, style='CodeChunk')
+
+		feedback_document.add_heading('Program output', 3)
+
+		output = marks.getOutput().splitlines()
+		for line in output:
+			feedback_document.add_paragraph(line, style='CodeChunk')
+
+		feedback_document.add_heading('Execution comments', 3)
+
+		comments = marks.getExecutionComments().splitlines()
+		for line in comments:
+			feedback_document.add_paragraph(line, style='CodeChunkComment')
+
+		feedback_document.add_heading('Your code', 3)
+		program = marks.getFullProgram().splitlines()
+		comments = marks.getErrorList()
+		lineNum = 1
+		for line in program:
+			highlight = False
+			for comment in comments:
+				if comment[0] == lineNum:
+					highlight = True
+			if highlight:
+				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line, style='CodeChunkHighlight')
+				for comment in comments:
+					if comment[0] == lineNum:
+						feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
+			else:
+				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line, style='CodeChunk')
+			lineNum += 1
+		for comment in comments:
+			if comment[0] == 0:
+				feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
+
+		feedback_document.save(student_dir+'/'+filename)
 
 	def construct_name_map(self):
 		username_index = 0

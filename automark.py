@@ -27,6 +27,10 @@ class Automark:
 			self.filename = filename
 	
 		# Load in the program from file
+		self.fullProgram = ''
+		with open(filename) as file:
+			self.fullProgram = file.read()
+
 		self.program = ""
 		self.lineNumber = []
 		self.errorList = []
@@ -50,12 +54,16 @@ class Automark:
 						characterPos += len(line)
 				linesRead += 1
 
-		# Stpre a line-delimited version of the program 
+		# Store a line-delimited version of the program 
 		self.programLines = self.program.splitlines()
 		
 		# Store a AST version of the program
 		parser = plyj.Parser()
-		self.programTree = parser.parse_string(self.program)
+		self.programTree = parser.parse_string(self.fullProgram)
+
+		# Initialise the inputs
+		self.stdin = ''
+		self.executionComments = ''
 
 		# Initialise the scoring state
 		self.commentScore = 0
@@ -82,9 +90,12 @@ class Automark:
 		self.indentationScore = self.checkIndentation()
 		self.executionScore = self.checkExecution()
 		
-		print self.getErrorList()
+		self.printErrorList()
 
 		print 'Final score: {:d}\n'.format(self.getTotalScore())
+
+	def getFullProgram(self):
+		return self.fullProgram
 
 	def getTotalScore(self):
 		totalScore = self.commentScore + self.variablesScore + self.indentationScore + self.executionScore
@@ -117,7 +128,7 @@ class Automark:
 
 	@staticmethod
 	def getInternalStatsStructure():
-		return ['Gap average', 'Gap SD', 'Variables short', 'Variables enumerated', 'Indentation errors', 'Execution time', 'Memory used', 'Execution result', 'Execution output', 'Output check 0', 'Output check 1']
+		return ['Gap average', 'Gap SD', 'Variables short', 'Variables enumerated', 'Indentation errors', 'Execution time', 'Memory used', 'Execution input', 'Execution result',  'Execution output', 'Output check 0', 'Output check 1']
 
 	def getInternalStats(self):
 		# Comment gap average
@@ -127,11 +138,12 @@ class Automark:
 		# Indentation errors
 		# Execution time
 		# Memory used
+		# Execution input
 		# Execution result
 		# Execution output
 		# Output check 0
 		# Output checl 1
-		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.executionResult, self.programOutput.encode('ascii', 'replace'), self.outputCheck[0], self.outputCheck[1]]
+		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, self.programOutput.encode('ascii', 'replace'), self.outputCheck[0], self.outputCheck[1]]
 		return stats
 
 	def getErrorStatus(self, response):
@@ -160,12 +172,25 @@ class Automark:
 			print 'Compiling'
 		elif status == 3:
 			print 'Running'
+			
+	def getInput(self):
+		return self.stdin
 
+	def getOutput(self):
+		return self.programOutput.encode('ascii', 'replace')
+		
+	def getExecutionComments(self):
+		return self.executionComments
+		
 	def getErrorList(self):
+		return self.errorList
+
+	def printErrorList(self):
 		errorList = ''
 		for error in self.errorList:
 			errorList += str(error[0]) + ' : ' + error[1] + '\n'
-		return errorList
+		print errorList
+
 
 	def lineFromCharacterNoSpace(self, charPos):
 		line = 0
@@ -189,7 +214,7 @@ class Automark:
 		concat = ''
 		if len(lines) < 2:
 			result = False
-			print 'Insufficient ({:d}) lines of output.'.format(len(lines))
+			#print 'Insufficient ({:d}) lines of output.'.format(len(lines))
 		else:
 			volumeLine = lines[len(lines) - 2]
 			concatLine = lines[len(lines) - 1]
@@ -199,14 +224,18 @@ class Automark:
 				concat = re.search(r'\d+', concatLine).group()
 			correctVolume = (width * height * depth)
 			correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
-			print 'Correct volume: {:d}\nOutput  volume: {:d}'.format(correctVolume, volume)
-			print 'Correct concat: {}\nOutput  concat: {}'.format(correctConcat, concat)
+			#print 'Correct volume: {:d}\nOutput  volume: {:d}'.format(correctVolume, volume)
+			#print 'Correct concat: {}\nOutput  concat: {}'.format(correctConcat, concat)
 			if (volume == correctVolume):
 				outputScore += 2
 				self.outputCheck[0] = True
+			else:
+				self.executionComments += 'Volume calculated incorrectly.\n'
 			if (concat == correctConcat):
 				outputScore += 2
 				self.outputCheck[1] = True
+			else:
+				self.executionComments += 'Concatenated string calculated incorrectly.\n'			
 		return outputScore
 
 	def checkCommentQuality(self):
@@ -237,16 +266,16 @@ class Automark:
 			
 			lastCommentLine = self.lineFromCharacter(blockComments[commentCount - 1].end())
 
-		print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(self.commentGapAverage, self.commentGapSD)
+		#print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(self.commentGapAverage, self.commentGapSD)
 		commentFrequency = max(1.0 - ((max(self.commentGapAverage - 3.0, 0.0))/2.0), 0.0)
 		commentConsistency = max(1.0 - ((max(self.commentGapSD - 2.0, 0.0))/1.0), 0.0)
 		commentScore = int(round(commentFrequency + commentConsistency))
 		#print 'Comment score: {:d}'.format(commentScore)
 
 		if commentFrequency < 0.75:
-			self.errorList.append([lastCommentLine, 'Try to include more useful comments in your code'])
+			self.errorList.append([lastCommentLine, 'Try to include more comments in your code'])
 		if commentConsistency < 0.75:
-			self.errorList.append([lastCommentLine, 'Your comments should be included throughout your code'])
+			self.errorList.append([lastCommentLine, 'Include comments evenly throughout your code, not just in a few places'])
 		return commentScore
 
 	def checkVariableNameQuality(self):
@@ -264,13 +293,13 @@ class Automark:
 					self.variableShort += 1
 					strike += 1
 					if (strike == 3):
-						self.errorList.append([variable[1], 'Use clear and expressive variable names'])
+						self.errorList.append([variable[1], 'Use variable names that represent what they\'re being used for'])
 				if re.search(r'\d+', name) != None:
 					if int(re.search(r'\d+', name).group()) > 0:
 						self.variableEnumeration += 1
 						strike += 1
 						if (strike == 3):
-							self.errorList.append([variable[1], 'Use clear and expressive variable names'])
+							self.errorList.append([variable[1], 'Avoid using sequentially numbered variables names'])
 		#print 'Variable name strikes: {:d}'.format(strike)
 		variablesScore = 1
 		if strike >= 3:
@@ -294,7 +323,7 @@ class Automark:
 				self.indentationErrors += 1
 				if self.indentationErrors <= 1:
 					firstError = lineNum
-				if self.indentationErrors > 3:
+				if self.indentationErrors == 4:
 					self.errorList.append([self.lineNumber[firstError], 'Indentation error'])
 				indent = tabs
 			indent += add
@@ -303,7 +332,7 @@ class Automark:
 			indentatinoScore = 0
 		else:
 			indentatinoScore = 1
-		print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
+		#print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
 		return indentatinoScore
 
 
@@ -325,11 +354,11 @@ class Automark:
 		width = random.randint(1, 100)
 		height = random.randint(1, 100)
 		depth = random.randint(1, 100)
-		stdin = "{}\n{}\n{}\n".format(width, height, depth)
-		print 'Inputs used: {:d}, {:d}, {:d}'.format(width, height, depth)
+		self.stdin = "{}\n{}\n{}\n".format(width, height, depth)
+		#print 'Inputs used: {:d}, {:d}, {:d}'.format(width, height, depth)
 
 		error = 'OK'
-		response = wsdlObject.createSubmission(self.user, self.password, self.program, 10, stdin, True, True)
+		response = wsdlObject.createSubmission(self.user, self.password, self.program, 10, self.stdin, True, True)
 		error = self.getErrorStatus(response)
 		if error != 'OK':
 			print 'Error: ' + error
@@ -358,6 +387,7 @@ class Automark:
 				compInfo = self.getValue(response, 'cmpinfo')
 				print 'Compilation output: ' + compInfo
 				self.programOutput = compInfo
+				self.executionComments = 'Program failed to compile.'
 			elif result == 12:
 				executionScore += 1
 				print 'Runtime error'
@@ -365,34 +395,38 @@ class Automark:
 				stdErrOutput = self.getValue(response, 'stderr')
 				print 'Runtime error: ' + stdErrOutput
 				self.programOutput = stdErrOutput
+				self.executionComments = 'Runtime error occurred during execution.'
 			elif result == 13:
 				executionScore += 1
 				print 'Time limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
 				self.executionTime = self.getValue(response, 'time')
-				print 'Execution time: {:f}s'.format(self.executionTime)
+				#print 'Execution time: {:f}s'.format(self.executionTime)
+				self.executionComments = 'Execution failed to complete (time limit exceeded).'
 			elif result == 17:
 				executionScore += 1
 				print 'Memory limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
 				self.memoryUsed = self.getValue(response, 'memory')
 				print 'Memory used: {} bytes'.format(self.memoryUsed)
+				self.executionComments = 'Execution failed to complete (ran out of memory).'
 			elif result == 19:
 				print 'Illegal system call'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
 				stdErrOutput = self.getValue(response, 'stderr')
 				print 'Error output: ' + stdErrOutput
 				self.programOutput = stdErrOutput
+				self.executionComments = 'Execution failed to complete (illegal system call).'
 			elif result == 15:
 				executionScore += 1
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				self.checkErrorStatus(response)
 				self.executionTime = self.getValue(response, 'time')
-				print 'Execution time: {:f}s'.format(self.executionTime)
+				#print 'Execution time: {:f}s'.format(self.executionTime)
 				self.memoryUsed = self.getValue(response, 'memory')
-				print 'Memory used: {} bytes'.format(self.memoryUsed)
+				#print 'Memory used: {} bytes'.format(self.memoryUsed)
 				date = self.getValue(response, 'date')
-				print 'Date submitted: ' + date
+				#print 'Date submitted: ' + date
 				output = self.getValue(response, 'output')
 				print
 				print 'Output: ' + output
@@ -400,9 +434,7 @@ class Automark:
 				result = self.checkOutputCorrectness(output, width, height, depth)
 				executionScore += result
 				if result == 4:
-					print 'Success!'
-				else:
-					print 'Failure :('
+					self.executionComments = 'Your outputs correctly match the specification.\n'
 			else:
 				print 'Internal error with the code checking system'
 
