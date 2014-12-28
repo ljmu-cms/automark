@@ -212,30 +212,33 @@ class Automark:
 		lines = output.splitlines()
 		volume = -1
 		concat = ''
-		if len(lines) < 2:
-			result = False
-			#print 'Insufficient ({:d}) lines of output.'.format(len(lines))
+
+		correctVolume = (width * height * depth)
+		correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
+		volumeFound = False
+		concatFound = False
+		for line in lines:
+			if re.search(r'\d+', line) != None:
+				volume = int(re.search(r'\d+', line).group())
+				if (volume == correctVolume):
+					volumeFound = True
+			if re.search(r'\d+', line) != None:
+				concat = re.search(r'\d+', line).group()
+				if (concat == correctConcat):
+					concatFound = True
+
+		if volumeFound:
+			outputScore += 2
+			self.outputCheck[0] = True
 		else:
-			volumeLine = lines[len(lines) - 2]
-			concatLine = lines[len(lines) - 1]
-			if re.search(r'\d+', volumeLine) != None:
-				volume = int(re.search(r'\d+', volumeLine).group())
-			if re.search(r'\d+', concatLine) != None:
-				concat = re.search(r'\d+', concatLine).group()
-			correctVolume = (width * height * depth)
-			correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
-			#print 'Correct volume: {:d}\nOutput  volume: {:d}'.format(correctVolume, volume)
-			#print 'Correct concat: {}\nOutput  concat: {}'.format(correctConcat, concat)
-			if (volume == correctVolume):
-				outputScore += 2
-				self.outputCheck[0] = True
-			else:
-				self.executionComments += 'Volume calculated incorrectly.\n'
-			if (concat == correctConcat):
-				outputScore += 2
-				self.outputCheck[1] = True
-			else:
-				self.executionComments += 'Concatenated string calculated incorrectly.\n'			
+			self.executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
+
+		if concatFound:
+			outputScore += 2
+			self.outputCheck[1] = True
+		else:
+			self.executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
+
 		return outputScore
 
 	def checkCommentQuality(self):
@@ -267,7 +270,7 @@ class Automark:
 			lastCommentLine = self.lineFromCharacter(blockComments[commentCount - 1].end())
 
 		#print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(self.commentGapAverage, self.commentGapSD)
-		commentFrequency = max(1.0 - ((max(self.commentGapAverage - 3.0, 0.0))/2.0), 0.0)
+		commentFrequency = max(1.0 - ((max(self.commentGapAverage - 5.0, 0.0))/2.0), 0.0)
 		commentConsistency = max(1.0 - ((max(self.commentGapSD - 2.0, 0.0))/1.0), 0.0)
 		commentScore = int(round(commentFrequency + commentConsistency))
 		#print 'Comment score: {:d}'.format(commentScore)
@@ -307,34 +310,57 @@ class Automark:
 		#print 'Variable name score: {:d}'.format(variablesScore)
 		return variablesScore
 
+	@staticmethod
+	def substring(line, tab, start):
+		match = True
+		if (len(tab) + start) <= len(line):
+			for position in range(0, len(tab)):
+				if line[start + position] != tab[position]:
+					match = False
+		else:
+			match = False
+		return match
+
 	def checkIndentation(self):
-		self.indentationErrors = 0
+		indentErrors = []
+		indentErrors.append(self.checkIndentationType('\t'))
+		indentErrors.append(self.checkIndentationType('  '))
+		indentErrors.append(self.checkIndentationType('   '))
+		indentErrors.append(self.checkIndentationType('    '))
+
+		minError, minErrorIndex = min((val, idx) for (idx, val) in enumerate(indentErrors))
+		self.indentationErrors = minError[0]
+
+		if self.indentationErrors > 3:
+			self.errorList.append([minError[1], 'Indentation error'])
+			indentatinoScore = 0
+		else:
+			indentatinoScore = 1
+		print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
+		return indentatinoScore
+
+	def checkIndentationType(self, tab):
+		indentationErrors = 0
+		tabsize = len(tab)
 		indent = 0
 		lineNum = 0
 		firstError = 0
 		for line in self.programLines:
-			add = line.count('{')
-			sub = line.count('}')
+			add = line.count('{') * tabsize
+			sub = line.count('}') * tabsize
 			tabs = 0
-			while line[tabs] == '\t':
-				tabs += 1
+			#while line[tabs] == '\t':
+			while Automark.substring(line, tab, tabs):
+				tabs += tabsize
 			indent -= sub
 			if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == ' ')):
-				self.indentationErrors += 1
-				if self.indentationErrors <= 1:
+				indentationErrors += 1
+				if indentationErrors <= 1:
 					firstError = lineNum
-				if self.indentationErrors == 4:
-					self.errorList.append([self.lineNumber[firstError], 'Indentation error'])
 				indent = tabs
 			indent += add
 			lineNum += 1
-		if self.indentationErrors > 3:
-			indentatinoScore = 0
-		else:
-			indentatinoScore = 1
-		#print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
-		return indentatinoScore
-
+		return [indentationErrors, self.lineNumber[firstError]]
 
 	def checkExecution(self):
 		executionScore = 0

@@ -133,7 +133,7 @@ class HouseKeepingAutomark:
 		self.feedback_document.tables[2].cell(11, 2).text = str(efficientScore)
 		self.feedback_document.tables[2].cell(13 + commentScore, 2).text = str(commentScore)
 		self.feedback_document.tables[2].cell(16, 2).text = str(totalScore)
-		self.feedback_document.save(student_dir+'/'+filename)
+		self.feedback_document.save(student_dir+'/../'+filename)
 
 	def write_student_name_to_document(self, student_dir, student_dir_name, student_name):
 		#default cell for student's firstname lastname
@@ -141,12 +141,12 @@ class HouseKeepingAutomark:
 		self.feedback_document.tables[0].cell(1,0).text = student_name
 		self.feedback_document.tables[0].cell(1,1).text = student_dir_name
 		self.feedback_document.tables[0].cell(1,2).text = self.marker_name
-		self.feedback_document.save(student_dir+'/'+filename)
+		self.feedback_document.save(student_dir+'/../'+filename)
 		#print student_dir+'/'+filename
 
 	def write_comments_to_document(self, student_dir, student_dir_name, marks):
 		filename = self.feedback_doc_name.replace('username', student_dir_name)
-		feedback_document = Document(student_dir+'/'+filename)
+		feedback_document = Document(student_dir+'/../'+filename)
 		feedback_document.add_heading('Program Comments', 2)
 
 		feedback_document.add_heading('Program input', 3)
@@ -188,7 +188,7 @@ class HouseKeepingAutomark:
 			if comment[0] == 0:
 				feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
 
-		feedback_document.save(student_dir+'/'+filename)
+		feedback_document.save(student_dir+'/../'+filename)
 
 	def construct_name_map(self):
 		username_index = 0
