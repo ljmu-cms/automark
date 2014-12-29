@@ -13,19 +13,41 @@ import os
 import subprocess
 
 class ExecCode:
-	def __init__(self, sourcefolder, leafname, classname, tempfolder):
-		self.folder = sourcefolder
-		self.leafname = leafname
-		self.classname = classname
-		self.tempfolder = tempfolder
-		filename = os.path.join(sourcefolder, leafname)
-		# Load in the program from file
-		self.fullProgram = ''
-		with open(filename) as file:
-			self.fullProgram = file.read()
+	# createSubmission(sourceCode, input)
+	# return error
+	
+	# getSubmissionStatus()
+	# return error, status, result
+	
+	# getSubmissionDetails(withSource, withOutput, withStderr, withCmpinfo)
+	# return time, date, status, result, memory, signal, source, input, output, stderr, cmpinfo
 
-	def getFullProgram(self):
-		return self.fullProgram
+	def __init__(self, tempfolder):
+		# Establish the temp folder
+		self.tempfolder = tempfolder
+
+	def createSubmission(self, sourceCode, classname, input):
+		# Store the persistent info
+		self.sourceCode = sourceCode
+		self.input = input
+		self.classname = classname
+
+		# Create the temp folder if it doesn't already exist
+		if not os.path.exists(self.tempfolder):
+			os.makedirs(self.tempfolder)
+
+		# Create the temporary source file to build based on the source code provided
+		self.tempsource = os.path.join(self.tempfolder, 'temp2.java')
+		with open(self.tempsource, 'w') as file:
+			file.write(sourceCode)
+
+		submission = self.Submission()
+		submission.run()
+
+
+	def getSubmissionStatus(self):
+		 pass
+
 
 	def compile_source(self):
 		result = False
@@ -33,14 +55,7 @@ class ExecCode:
 		if ExecCode.which('javac') == None:
 			output = 'Java compiler javac could not be found'
 		else:
-			if not os.path.exists(self.tempfolder):
-				os.makedirs(self.tempfolder)
-			source_compile = 'javac -sourcepath \"{}\" -d \"{}\" \"{}/{}\"'.format(self.folder, self.tempfolder, self.folder, self.leafname)
-			print source_compile
-			# Returns True if an error occurs
-			#result = os.system(source_compile) != 0
-
-			program = subprocess.Popen(['javac', '-sourcepath', self.folder, '-d', self.tempfolder, self.folder + '/' + self.leafname], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			program = subprocess.Popen(['javac', '-sourcepath', self.tempfolder, '-d', self.tempfolder, self.tempsource], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 			output = program.stdout.read()
 			program.communicate()
 			result = program.returncode
@@ -52,8 +67,8 @@ class ExecCode:
 		if ExecCode.which('java') == None:
 			print 'Java VM could not be found'
 		else:
-			program = subprocess.Popen(['java', self.classname], shell=False, cwd=self.folder, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			program.stdin.write('10\n11\n12\n')
+			program = subprocess.Popen(['java', self.classname], shell=False, cwd=self.tempfolder, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			program.stdin.write(self.input)
 			output = program.stdout.read()
 		return output
  
@@ -75,8 +90,39 @@ class ExecCode:
 					return exe_file
 	 
 		return None
-					
-program = ExecCode('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate', 'temp.java', 'CourseworkTask1', 'build')
+
+	import threading
+	class Submission(threading.Thread):
+		def __init__(self):
+			self.error = 'OK'
+			self.status = ''
+			self.result = ''
+			self.updateStatus = ExecCode.threading.Lock()
+			pass
+
+		def run(self):
+			print 'Hello thread'
+
+		def setSubmissionStatus(self, error, status, result):
+			self.updateStatus.acquire()
+			self.error = error
+			self.status = status
+			self.result = result
+			self.updateStatus.release()
+
+		def getSubmissionStatus(self):
+			self.updateStatus.acquire()
+			status = {'error': self.error, 'status': self.status, 'result': self.result}
+			self.updateStatus.release()
+			return status
+
+
+program = ExecCode('build')
+
+sourceCode = ''
+with  open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
+	sourceCode = file.read()
+program.createSubmission(sourceCode, 'CourseworkTask1', '10\n11\n12\n')
 program.compile_source()
 print program.execute()
 
