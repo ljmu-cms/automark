@@ -11,6 +11,10 @@ Execute code with given inputs and return the outputs
 
 import os
 import subprocess
+import time
+import collections
+
+Status = collections.namedtuple('Status', ['key', 'value'])
 
 class ExecCode:
 	# createSubmission(sourceCode, input)
@@ -31,6 +35,7 @@ class ExecCode:
 		self.sourceCode = sourceCode
 		self.input = input
 		self.classname = classname
+		self.status = 0
 
 		# Create the temp folder if it doesn't already exist
 		if not os.path.exists(self.tempfolder):
@@ -41,37 +46,26 @@ class ExecCode:
 		with open(self.tempsource, 'w') as file:
 			file.write(sourceCode)
 
-		submission = self.Submission()
-		submission.run()
-
+		self.submission = self.Submission(self.tempfolder, self.tempsource, 'CourseworkTask1', '10\n11\n12\n')
+		self.status = 1
+		self.submission.start()
 
 	def getSubmissionStatus(self):
-		 pass
-
-
-	def compile_source(self):
-		result = False
-		output = ''
-		if ExecCode.which('javac') == None:
-			output = 'Java compiler javac could not be found'
+		if self.status == 0:
+			status = {'item': [Status('error', 'OK'), Status('status', -1), Status('result', 0)]}
 		else:
-			program = subprocess.Popen(['javac', '-sourcepath', self.tempfolder, '-d', self.tempfolder, self.tempsource], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			output = program.stdout.read()
-			program.communicate()
-			result = program.returncode
+			status = self.submission.getSubmissionStatus()
+		return status
 
-		return [result, output]
-
-	def execute(self):
-		output = ''
-		if ExecCode.which('java') == None:
-			print 'Java VM could not be found'
+	def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+		if self.status == 0:
+			status = {'error': 'FAIL'}
 		else:
-			program = subprocess.Popen(['java', self.classname], shell=False, cwd=self.tempfolder, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			program.stdin.write(self.input)
-			output = program.stdout.read()
-		return output
- 
+			status = self.submission.getSubmissionDetails(withSource, withInput, withOutput, withStderr, withCmpinfo)
+		if withSource:
+			status['item'].append(Status('source', self.sourceCode))
+		return status
+
 	#http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 	@staticmethod
 	def which(program):
@@ -93,15 +87,39 @@ class ExecCode:
 
 	import threading
 	class Submission(threading.Thread):
-		def __init__(self):
+		def __init__(self, tempfolder, tempsource, classname, input):
 			self.error = 'OK'
-			self.status = ''
-			self.result = ''
+			self.status = -1
+			self.result = 0
 			self.updateStatus = ExecCode.threading.Lock()
-			pass
+			self.tempfolder = tempfolder
+			self.tempsource = tempsource
+			self.classname = classname
+			self.input = input
+			self.cmpinfo = ''
+			self.timeStart = 0
+			self.timeEnd = 0
+			self.date = ''
+			self.compileResult = [0, '']
+			self.execResult = [0, '', '']
+			ExecCode.threading.Thread.__init__(self)
 
 		def run(self):
-			print 'Hello thread'
+			self.date = time.strftime('%Y-%m-%d %H-%M-%S')
+			self.compileResult = self.compile_source(self.tempfolder, self.tempsource)
+			if self.compileResult[0] != 0:
+				self.cmpinfo = self.compileResult[1]
+				self.setSubmissionStatus('OK', 0, 11)
+			else:
+				self.cmpinfo = ''
+				self.setSubmissionStatus('OK', 3, 0)
+				self.execResult = self.execute(self.tempfolder, self.classname, self.input)
+				self.output = self.execResult[1]
+				self.stderr = self.execResult[2]
+				if self.execResult[0] != 0:
+					self.setSubmissionStatus('OK', 0, 12)
+				else:
+					self.setSubmissionStatus('OK', 0, 15)
 
 		def setSubmissionStatus(self, error, status, result):
 			self.updateStatus.acquire()
@@ -110,19 +128,113 @@ class ExecCode:
 			self.result = result
 			self.updateStatus.release()
 
+		# Status
+		# < 0 - waiting for compilation - the submission awaits execution in the queue
+		#   0 - done - the program has finished
+		#   1 - compilation - the program is being compiled
+		#   3 - running - the program is being executed
+		
+		# Result
+		#   0 - not running - the submission has been created with run parameter set to false
+		#  11 - compilation error - the program could not be executed due to compilation error
+		#  12 - runtime error - the program finished because of the runtime error, for example: division by zero, array index out of bounds, uncaught exception
+		#  13 - time limit exceeded - the program didn't stop before the time limit
+		#  15 - success - everything went ok
+		#  17 - memory limit exceeded - the program tried to use more memory than it is allowed to
+		#  19 - illegal system call - the program tried to call illegal system function
+		#  20 - internal error - some problem occurred; try to submit the program again
+
 		def getSubmissionStatus(self):
 			self.updateStatus.acquire()
-			status = {'error': self.error, 'status': self.status, 'result': self.result}
+			status = {'item': [Status('error', self.error), Status('status', self.status), Status('result', self.result)]}
 			self.updateStatus.release()
 			return status
 
+		def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+			details = {'item': []}
+			details['item'].append(Status('error', self.error))
+			details['item'].append(Status('time', (self.timeEnd - self.timeStart)))
+			details['item'].append(Status('date', self.date))
+			details['item'].append(Status('status', self.status))
+			details['item'].append(Status('result', self.result))
+			details['item'].append(Status('memory', 0))
+			details['item'].append(Status('signal', self.execResult[0]))
+			details['item'].append(Status('public', False))
+			if withInput:
+				details['item'].append(Status('input', self.input))
+			if withOutput:
+				details['item'].append(Status('output', self.execResult[1]))
+			if withStderr:
+				details['item'].append(Status('stderr', self.execResult[2]))
+			if withCmpinfo:
+				details['item'].append(Status('cmpinfo', self.cmpinfo))
+			return details
 
-program = ExecCode('build')
+		def compile_source(self, tempfolder, tempsource):
+			result = False
+			output = ''
+			if ExecCode.which('javac') == None:
+				output = 'Java compiler javac could not be found'
+				self.setSubmissionStatus('OK', 0, 20)
+			else:
+				self.setSubmissionStatus('OK', 1, 0)
+				program = subprocess.Popen(['javac', '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				output = program.stdout.read()
+				program.communicate()
+				result = program.returncode
+				if result == 0:
+					# Compilation error
+					self.setSubmissionStatus('OK', 0, 11)
+				else:
+					# Compilation success
+					self.setSubmissionStatus('OK', 3, 0)
+			return [result, output]
 
-sourceCode = ''
-with  open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
-	sourceCode = file.read()
-program.createSubmission(sourceCode, 'CourseworkTask1', '10\n11\n12\n')
-program.compile_source()
-print program.execute()
+		def execute(self, tempfolder, classname, input):
+			output = ''
+			if ExecCode.which('java') == None:
+				print 'Java VM could not be found'
+				self.setSubmissionStatus('OK', 1, 0)
+			else:
+				self.timeStart = time.time()
+				program = subprocess.Popen(['java', classname], shell=False, cwd=tempfolder, stderr=subprocess.PIPE, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				program.stdin.write(input)
+				output = program.stdout.read()
+				error = program.stderr.read()
+				result = program.returncode
+				self.timeEnd = time.time()
+			return [result, output, error]
+	 
+def getValue(response, key):
+	value = ''
+	for item in response['item']:
+		if item.key == key:
+			value = item.value
+	return value
+
+def checkSubmissionsStatus(status):
+	if status < 0:
+		print 'Waiting for compilation'
+	elif status == 1:
+		print 'Compiling'
+	elif status == 3:
+		print 'Running'
+
+
+#program = ExecCode('build')
+#sourceCode = ''
+#with open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
+#	sourceCode = file.read()
+#program.createSubmission(sourceCode, 'CourseworkTask1', '10\n11\n12\n')
+#status = -1;
+#waitTime = 0
+#while status != 0:
+#	time.sleep(waitTime)
+#	waitTime = 0.1
+#	response = program.getSubmissionStatus()
+#	status = getValue(response, 'status')
+#	checkSubmissionsStatus (status)
+#details = program.getSubmissionDetails(True, True, True, True, True)
+#print getValue(details, 'output')
+
 
