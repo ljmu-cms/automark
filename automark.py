@@ -427,10 +427,17 @@ class Automark:
 			elif result == 13:
 				executionScore += 1
 				print 'Time limit exceeded'
-				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
+				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				self.executionTime = self.getValue(response, 'time')
+				output = self.getValue(response, 'output')
+				self.programOutput = output
 				#print 'Execution time: {:f}s'.format(self.executionTime)
+				result = self.checkOutputCorrectness(output, width, height, depth)
+				executionScore += result
+				if result > 0:
+					executionScore -= 1
 				self.executionComments = 'Execution failed to complete (time limit exceeded).'
+
 			elif result == 17:
 				executionScore += 1
 				print 'Memory limit exceeded'

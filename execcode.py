@@ -9,12 +9,18 @@ Liverpool John Moores University
 Execute code with given inputs and return the outputs
 """
 
+import sys
 import os
-import subprocess
+from subprocess import PIPE, Popen, STDOUT
 import time
 import collections
+try:
+    from Queue import Queue, Empty
+except ImportError:
+    from queue import Queue, Empty  # python 3.x
 
 Status = collections.namedtuple('Status', ['key', 'value'])
+ON_POSIX = 'posix' in sys.builtin_module_names
 
 class ExecCode:
 	'Compile and execute a piece of code so it can be evaluted'
@@ -60,6 +66,9 @@ class ExecCode:
 		# Spawn the sub-thread to perform compilation and execution of the submission
 		self.submission.start()
 		status = {'item': [Status('error', 'OK'), Status('link', 0)]}
+		
+
+
 		return status
 
 	def getSubmissionStatus(self, user, password, link):
@@ -176,6 +185,7 @@ class ExecCode:
 			self.date = ''
 			self.compileResult = [0, '']
 			self.execResult = [0, '', '']
+			self.maxexectime = 3.0
 			ExecCode.threading.Thread.__init__(self)
 
 		def run(self):
@@ -199,8 +209,12 @@ class ExecCode:
 					# The execuation failed, so note the details
 					self.setSubmissionStatus('OK', 0, 12)
 				else:
-					# The execuation was successful
-					self.setSubmissionStatus('OK', 0, 15)
+					if self.timelimitexceeded:
+						# The execution took too long
+						self.setSubmissionStatus('OK', 0, 13)
+					else:
+						# The execuation was successful
+						self.setSubmissionStatus('OK', 0, 15)
 
 		def setSubmissionStatus(self, error, status, result):
 			'For internal use. Sets the status info for a given submssion.'
@@ -272,7 +286,7 @@ class ExecCode:
 				# The Java compiler is present
 				self.setSubmissionStatus('OK', 1, 0)
 				# Execuate the compilation as a subprocess
-				program = subprocess.Popen(['javac', '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				program = Popen(['javac', '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=STDOUT, stdin=PIPE, stdout=PIPE)
 				# Collect any outputs from the compilation process
 				output = program.stdout.read()
 				program.communicate()
@@ -296,11 +310,37 @@ class ExecCode:
 				# The Java VM is present
 				self.timeStart = time.time()
 				# Execute the compiled code as a subprocess
-				program = subprocess.Popen(['java', classname], shell=False, cwd=tempfolder, stderr=subprocess.PIPE, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				program = Popen(['java', classname], shell=False, cwd=tempfolder, bufsize=1, stderr=PIPE, stdin=PIPE, stdout=PIPE, close_fds=ON_POSIX)
+				outputQueue = Queue()
+				outputCollector = ExecCode.threading.Thread(target=ExecCode.Submission.enqueue_output, args=(program.stdout, outputQueue))
+				outputCollector.daemon = True
+				outputCollector.start()
 				# Pass the input to the running code
 				program.stdin.write(input)
-				# Collect any output frm the the running code
-				output = program.stdout.read()
+				# Collect any output form the the running code
+				output = ''
+				exectime = 0.0
+				result = None
+				self.timelimitexceeded = False
+				while (result == None) and not self.timelimitexceeded:
+					program.poll()
+					try:
+						line = outputQueue.get_nowait()
+					except Empty:
+						# No output, wait a bit and check again
+						time.sleep(0.1)
+						result = program.returncode
+					else:
+						# We caught some output, so record it
+						output += line
+					# Check how long the program's been running for
+					exectime = time.time() - self.timeStart
+					if exectime >= self.maxexectime:
+						# Too long!
+						self.timelimitexceeded = True
+
+				if self.timelimitexceeded:
+					program.kill()
 				error = program.stderr.read()
 				result = program.returncode
 				if result == None:
@@ -308,7 +348,12 @@ class ExecCode:
 				self.timeEnd = time.time()
 			return [result, output.decode("utf-8"), error.decode("utf-8")]
 
-
+		# http://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
+		@staticmethod
+		def enqueue_output(out, queue):
+				for line in iter(out.readline, b''):
+				    queue.put(line)
+				out.close()
 
 
 #program = ExecCode('build', 'CourseworkTask1')

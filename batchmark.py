@@ -80,13 +80,14 @@ class HouseKeepingAutomark:
 		return java_file
 
 	def create_new_feedback_document(self):
+		print
 		marker_directory = os.path.dirname(os.path.realpath(__file__))+'/'+self.marker_name
 		for student_dir, _, file in os.walk(marker_directory):
 			student_dir_name = os.path.relpath(student_dir, marker_directory)
-			print 'Student: {}'.format(student_dir_name)
 
 			#print student_dir
 			if (student_dir_name is not '.') and (student_dir_name in self.name_map):
+				print 'Student: {}'.format(student_dir_name)
 				student_name = self.name_map[student_dir_name][0] + ' ' + self.name_map[student_dir_name][1]
 				self.unzip_submission(student_dir)
 				java_path = self.automark(student_dir)
