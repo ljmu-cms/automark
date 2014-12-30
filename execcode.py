@@ -17,6 +17,7 @@ import collections
 Status = collections.namedtuple('Status', ['key', 'value'])
 
 class ExecCode:
+	'Compile and execute a piece of code so it can be evaluted'
 	# createSubmission(sourceCode, input)
 	# return error
 	
@@ -27,15 +28,18 @@ class ExecCode:
 	# return time, date, status, result, memory, signal, source, input, output, stderr, cmpinfo
 
 	def __init__(self, tempfolder):
+		'Create a new instane of ExecCode(tempfolder)'
 		# Establish the temp folder
 		self.tempfolder = tempfolder
 
 	def createSubmission(self, sourceCode, classname, input):
+		'Create a new piece of code to be compiled and executed'
 		# Store the persistent info
 		self.sourceCode = sourceCode
 		self.input = input
 		self.classname = classname
 		self.status = 0
+		self.date = time.strftime('%Y-%m-%d %H-%M-%S')
 
 		# Create the temp folder if it doesn't already exist
 		if not os.path.exists(self.tempfolder):
@@ -46,48 +50,101 @@ class ExecCode:
 		with open(self.tempsource, 'w') as file:
 			file.write(sourceCode)
 
-		self.submission = self.Submission(self.tempfolder, self.tempsource, 'CourseworkTask1', '10\n11\n12\n')
+		# Set up details of the submission in the sub-thread
+		self.submission = self.Submission(self.tempfolder, self.tempsource, classname, input)
 		self.status = 1
+		# Spawn the sub-thread to perform compilation and execution of the submission
 		self.submission.start()
 
 	def getSubmissionStatus(self):
+		'Get the status of the code submission'
 		if self.status == 0:
+			# The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
 			status = {'item': [Status('error', 'OK'), Status('status', -1), Status('result', 0)]}
 		else:
+			# Get the response from the compilation/executionsub-thread
 			status = self.submission.getSubmissionStatus()
 		return status
 
 	def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+		'Get detailed information about a submission compilation and execution'
 		if self.status == 0:
-			status = {'error': 'FAIL'}
+			# The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
+			details = {'item': []}
+			details['item'].append(Status('error', 'OK'))
+			details['item'].append(Status('time', 0))
+			details['item'].append(Status('status', -1))
+			details['item'].append(Status('result', 0))
+			details['item'].append(Status('memory', 0))
+			details['item'].append(Status('signal', 0))
+			details['item'].append(Status('public', False))
+			if withInput:
+				details['item'].append(Status('input', self.input))
+			if withOutput:
+				details['item'].append(Status('output', ''))
+			if withStderr:
+				details['item'].append(Status('stderr', ''))
+			if withCmpinfo:
+				details['item'].append(Status('cmpinfo', ''))
 		else:
-			status = self.submission.getSubmissionDetails(withSource, withInput, withOutput, withStderr, withCmpinfo)
+			# Get the response from the compilation/executionsub-thread
+			details = self.submission.getSubmissionDetails(withSource, withInput, withOutput, withStderr, withCmpinfo)
+		details['item'].append(Status('date', self.date))
 		if withSource:
-			status['item'].append(Status('source', self.sourceCode))
-		return status
+			details['item'].append(Status('source', self.sourceCode))
+		return details
+
+	@staticmethod
+	def getValue(response, key):
+		'Helper function to extract a value from the return data for the given key'
+		value = ''
+		# Find the item with the appropriate key
+		for item in response['item']:
+			if item.key == key:
+				# Return the value for this item
+				value = item.value
+		return value
+
+	@staticmethod
+	def checkSubmissionsStatus(status):
+		'Print out a status string based on the status number'
+		if status < 0:
+			print 'Waiting for compilation'
+		elif status == 1:
+			print 'Compiling'
+		elif status == 3:
+			print 'Running'
 
 	#http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 	@staticmethod
 	def which(program):
+		'Check whether a given executable exists'
 		def is_exe(fpath):
+			# Establish whether the file is executablee
 			return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 	 
 		fpath, fname = os.path.split(program)
 		if fpath:
 			if is_exe(program):
+				# The file exists and is executable
 				return program
 		else:
+			# Check the PATH environment variable
 			for path in os.environ["PATH"].split(os.pathsep):
 				path = path.strip('"')
 				exe_file = os.path.join(path, program)
 				if is_exe(exe_file):
+					# the path is executable and has the correct name
 					return exe_file
-	 
+		# Couldn't find the executable either directly or in the path	 
 		return None
 
 	import threading
 	class Submission(threading.Thread):
+		'Threading class to allow compilation and execution in parallel with other tasks'
 		def __init__(self, tempfolder, tempsource, classname, input):
+			'Initialise the thread'
+			# Set up the initial variable values that the thread needss
 			self.error = 'OK'
 			self.status = -1
 			self.result = 0
@@ -105,27 +162,38 @@ class ExecCode:
 			ExecCode.threading.Thread.__init__(self)
 
 		def run(self):
-			self.date = time.strftime('%Y-%m-%d %H-%M-%S')
+			'The thread entry point'
+			# Compile the source file
 			self.compileResult = self.compile_source(self.tempfolder, self.tempsource)
 			if self.compileResult[0] != 0:
+				# The compilation failed, so just return the output from the compilation
 				self.cmpinfo = self.compileResult[1]
 				self.setSubmissionStatus('OK', 0, 11)
 			else:
+				# The compilation was successful
 				self.cmpinfo = ''
 				self.setSubmissionStatus('OK', 3, 0)
+				# Execute the resulting Java class file
 				self.execResult = self.execute(self.tempfolder, self.classname, self.input)
+				# Capture the returned output from the execution
 				self.output = self.execResult[1]
 				self.stderr = self.execResult[2]
 				if self.execResult[0] != 0:
+					# The execuation failed, so note the details
 					self.setSubmissionStatus('OK', 0, 12)
 				else:
+					# The execuation was successful
 					self.setSubmissionStatus('OK', 0, 15)
 
 		def setSubmissionStatus(self, error, status, result):
+			'For internal use. Sets the status info for a given submssion.'
+			# Ensure only one thread can read/write the details simultaneously by acquring a lock
 			self.updateStatus.acquire()
+			# Set the details
 			self.error = error
 			self.status = status
 			self.result = result
+			# Release the lock
 			self.updateStatus.release()
 
 		# Status
@@ -145,21 +213,26 @@ class ExecCode:
 		#  20 - internal error - some problem occurred; try to submit the program again
 
 		def getSubmissionStatus(self):
+			'For internal use. Gets status info about a given submssion.'
+			# Ensure only one thread can read/write the details simultaneously by acquring a lock
 			self.updateStatus.acquire()
+			# Structure the data appropriately
 			status = {'item': [Status('error', self.error), Status('status', self.status), Status('result', self.result)]}
+			# Release the lock
 			self.updateStatus.release()
 			return status
 
 		def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+			'For internal use. Gets details of a completed submssion.'
 			details = {'item': []}
 			details['item'].append(Status('error', self.error))
 			details['item'].append(Status('time', (self.timeEnd - self.timeStart)))
-			details['item'].append(Status('date', self.date))
 			details['item'].append(Status('status', self.status))
 			details['item'].append(Status('result', self.result))
 			details['item'].append(Status('memory', 0))
 			details['item'].append(Status('signal', self.execResult[0]))
 			details['item'].append(Status('public', False))
+			# Some of the return key-value pairs are optional
 			if withInput:
 				details['item'].append(Status('input', self.input))
 			if withOutput:
@@ -171,14 +244,19 @@ class ExecCode:
 			return details
 
 		def compile_source(self, tempfolder, tempsource):
+			'For internal use. Compiles the java source code.'
 			result = False
 			output = ''
 			if ExecCode.which('javac') == None:
+				# The Java compiler couldn't be found
 				output = 'Java compiler javac could not be found'
 				self.setSubmissionStatus('OK', 0, 20)
 			else:
+				# The Java compiler is present
 				self.setSubmissionStatus('OK', 1, 0)
+				# Execuate the compilation as a subprocess
 				program = subprocess.Popen(['javac', '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=subprocess.STDOUT, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				# Collect any outputs from the compilation process
 				output = program.stdout.read()
 				program.communicate()
 				result = program.returncode
@@ -191,34 +269,26 @@ class ExecCode:
 			return [result, output]
 
 		def execute(self, tempfolder, classname, input):
+			'For internal use. Executes the java source code.'
 			output = ''
 			if ExecCode.which('java') == None:
+				# The Java VM could not be found
 				print 'Java VM could not be found'
 				self.setSubmissionStatus('OK', 1, 0)
 			else:
+				# The Java VM is present
 				self.timeStart = time.time()
+				# Execute the compiled code as a subprocess
 				program = subprocess.Popen(['java', classname], shell=False, cwd=tempfolder, stderr=subprocess.PIPE, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				# Pass the input to the running code
 				program.stdin.write(input)
+				# Collect any output frm the the running code
 				output = program.stdout.read()
 				error = program.stderr.read()
 				result = program.returncode
 				self.timeEnd = time.time()
 			return [result, output, error]
 	 
-def getValue(response, key):
-	value = ''
-	for item in response['item']:
-		if item.key == key:
-			value = item.value
-	return value
-
-def checkSubmissionsStatus(status):
-	if status < 0:
-		print 'Waiting for compilation'
-	elif status == 1:
-		print 'Compiling'
-	elif status == 3:
-		print 'Running'
 
 
 #program = ExecCode('build')
@@ -232,9 +302,9 @@ def checkSubmissionsStatus(status):
 #	time.sleep(waitTime)
 #	waitTime = 0.1
 #	response = program.getSubmissionStatus()
-#	status = getValue(response, 'status')
-#	checkSubmissionsStatus (status)
+#	status = ExecCode.getValue(response, 'status')
+#	ExecCode.checkSubmissionsStatus (status)
 #details = program.getSubmissionDetails(True, True, True, True, True)
-#print getValue(details, 'output')
+#print ExecCode.getValue(details, 'output')
 
 
