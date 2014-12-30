@@ -16,6 +16,8 @@ import re
 import random
 import plyjext.parser as plyj
 import plyjext.model as model
+import execcode
+import os
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -25,6 +27,7 @@ class Automark:
 			self.password = file.readline().rstrip('\n')
 			self.score = 0
 			self.filename = filename
+			self.classname = os.path.splitext(os.path.split(filename)[1])[0]
 	
 		# Load in the program from file
 		self.fullProgram = ''
@@ -35,7 +38,7 @@ class Automark:
 		self.lineNumber = []
 		self.errorList = []
 		self.lineCharacterStart = []
-		foundMain = False
+		foundMain = True
 		linesRead = 1
 		linesAdded = 0
 		characterPos = 0
@@ -90,7 +93,7 @@ class Automark:
 		self.indentationScore = self.checkIndentation()
 		self.executionScore = self.checkExecution()
 		
-		self.printErrorList()
+		#self.printErrorList()
 
 		print 'Final score: {:d}\n'.format(self.getTotalScore())
 
@@ -336,7 +339,7 @@ class Automark:
 			indentatinoScore = 0
 		else:
 			indentatinoScore = 1
-		print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
+		#print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
 		return indentatinoScore
 
 	def checkIndentationType(self, tab):
@@ -366,7 +369,8 @@ class Automark:
 		executionScore = 0
 		#return executionScore
 		# Creating wsdl client
-		wsdlObject = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
+		#wsdlObject = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
+		wsdlObject = execcode.ExecCode('build', self.classname)
 
 		# Check the available languages
 		#response = wsdlObject.getLanguages(user, password);
@@ -393,7 +397,7 @@ class Automark:
 
 			# Periodically check the submission status
 			status = -1;
-			waitTime = 0
+			waitTime = 1
 			while status != 0:
 				time.sleep(waitTime)
 				waitTime = 3
@@ -402,8 +406,6 @@ class Automark:
 				status = self.getValue(response, 'status')
 				self.checkSubmissionsStatus (status)
 
-			print
-		
 			# Find out what happened to the program
 			result = self.getValue(response, 'result')
 			self.executionResult = result
@@ -454,8 +456,8 @@ class Automark:
 				date = self.getValue(response, 'date')
 				#print 'Date submitted: ' + date
 				output = self.getValue(response, 'output')
-				print
-				print 'Output: ' + output
+				#print
+				#print 'Output: ' + output
 				self.programOutput = output
 				result = self.checkOutputCorrectness(output, width, height, depth)
 				executionScore += result

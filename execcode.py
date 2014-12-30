@@ -18,6 +18,8 @@ Status = collections.namedtuple('Status', ['key', 'value'])
 
 class ExecCode:
 	'Compile and execute a piece of code so it can be evaluted'
+	# user and password are ignored in this implementation
+
 	# createSubmission(sourceCode, input)
 	# return error
 	
@@ -27,17 +29,18 @@ class ExecCode:
 	# getSubmissionDetails(withSource, withOutput, withStderr, withCmpinfo)
 	# return time, date, status, result, memory, signal, source, input, output, stderr, cmpinfo
 
-	def __init__(self, tempfolder):
+	def __init__(self, tempfolder, classname):
 		'Create a new instane of ExecCode(tempfolder)'
 		# Establish the temp folder
 		self.tempfolder = tempfolder
+		self.classname = classname
+		self.tempsourceleaf = classname + '.java'
 
-	def createSubmission(self, sourceCode, classname, input):
+	def createSubmission(self, user, password, sourceCode, language, input, run, private):
 		'Create a new piece of code to be compiled and executed'
 		# Store the persistent info
 		self.sourceCode = sourceCode
 		self.input = input
-		self.classname = classname
 		self.status = 0
 		self.date = time.strftime('%Y-%m-%d %H-%M-%S')
 
@@ -46,17 +49,20 @@ class ExecCode:
 			os.makedirs(self.tempfolder)
 
 		# Create the temporary source file to build based on the source code provided
-		self.tempsource = os.path.join(self.tempfolder, 'temp2.java')
+		self.tempsource = os.path.join(self.tempfolder, self.tempsourceleaf)
+		ExecCode.tidyup(self.tempfolder, self.tempsource)
 		with open(self.tempsource, 'w') as file:
 			file.write(sourceCode)
 
 		# Set up details of the submission in the sub-thread
-		self.submission = self.Submission(self.tempfolder, self.tempsource, classname, input)
+		self.submission = self.Submission(self.tempfolder, self.tempsource, self.classname, input)
 		self.status = 1
 		# Spawn the sub-thread to perform compilation and execution of the submission
 		self.submission.start()
+		status = {'item': [Status('error', 'OK'), Status('link', 0)]}
+		return status
 
-	def getSubmissionStatus(self):
+	def getSubmissionStatus(self, user, password, link):
 		'Get the status of the code submission'
 		if self.status == 0:
 			# The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
@@ -66,7 +72,7 @@ class ExecCode:
 			status = self.submission.getSubmissionStatus()
 		return status
 
-	def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+	def getSubmissionDetails(self, user, password, link, withSource, withInput, withOutput, withStderr, withCmpinfo):
 		'Get detailed information about a submission compilation and execution'
 		if self.status == 0:
 			# The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
@@ -138,6 +144,17 @@ class ExecCode:
 					return exe_file
 		# Couldn't find the executable either directly or in the path	 
 		return None
+
+	@staticmethod
+	def tidyup(tempfolder, tempsource):
+		#self.tempsource = os.path.join(self.tempfolder, self.tempsourceleaf)
+		if os.path.isfile(tempsource):
+			os.remove(tempsource)
+
+		for file in os.listdir(tempfolder):
+			if os.path.splitext(file)[1] == '.class':
+				path = os.path.join(tempfolder, file)
+				os.remove(path)
 
 	import threading
 	class Submission(threading.Thread):
@@ -286,25 +303,28 @@ class ExecCode:
 				output = program.stdout.read()
 				error = program.stderr.read()
 				result = program.returncode
+				if result == None:
+					result = 0
 				self.timeEnd = time.time()
-			return [result, output, error]
-	 
+			return [result, output.decode("utf-8"), error.decode("utf-8")]
 
 
-#program = ExecCode('build')
+
+
+#program = ExecCode('build', 'CourseworkTask1')
 #sourceCode = ''
 #with open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
 #	sourceCode = file.read()
-#program.createSubmission(sourceCode, 'CourseworkTask1', '10\n11\n12\n')
+#program.createSubmission('', '', sourceCode, 11, '10\n11\n12\n', True, True)
 #status = -1;
 #waitTime = 0
 #while status != 0:
 #	time.sleep(waitTime)
 #	waitTime = 0.1
-#	response = program.getSubmissionStatus()
+#	response = program.getSubmissionStatus('', '', '')
 #	status = ExecCode.getValue(response, 'status')
 #	ExecCode.checkSubmissionsStatus (status)
-#details = program.getSubmissionDetails(True, True, True, True, True)
+#details = program.getSubmissionDetails('', '', '', True, True, True, True, True)
 #print ExecCode.getValue(details, 'output')
 
 

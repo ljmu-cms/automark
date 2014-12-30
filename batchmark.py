@@ -45,12 +45,12 @@ class HouseKeepingAutomark:
 	#probably won't work for Windows
 	def unzip_submission(self, student_dir):
 		#form unzip command
-		cmd = 'unzip -d ' + student_dir + '/ ' + student_dir + '/*.zip'
-		print cmd, '\n\n'
-		sys_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		sys_process.wait()
-		std_out = sys_process.stdout.read().strip()
-		print std_out
+		cmd = ['unzip', '-q', '-o', '-d', student_dir + '/', student_dir + '/*.zip']
+		#print cmd, '\n\n'
+		sys_process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		std_out = sys_process.communicate()
+		#std_out = sys_process.stdout.read().strip()
+		#print std_out
 
 	def outputcsv(self, items):
 		count = 0
@@ -88,13 +88,13 @@ class HouseKeepingAutomark:
 			#print student_dir
 			if (student_dir_name is not '.') and (student_dir_name in self.name_map):
 				student_name = self.name_map[student_dir_name][0] + ' ' + self.name_map[student_dir_name][1]
-				#self.unzip_submission(student_dir)
+				self.unzip_submission(student_dir)
 				java_path = self.automark(student_dir)
 				if java_path == '':
 					print 'No java file'
 					self.write_student_name_to_document(student_dir, student_dir_name, student_name)
 				else:
-					print 'file: {}'.format(java_path)
+					#print 'file: {}'.format(java_path)
 					marks = automark.Automark(java_path, 'credentials.txt')
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
 					self.write_comments_to_document(student_dir, student_dir_name, marks)
