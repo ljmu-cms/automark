@@ -19,6 +19,7 @@ import plyjext.model as model
 import execcode
 import os
 import indentation
+import variables
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -286,38 +287,19 @@ class Automark:
 		return commentScore
 
 	def checkVariableNameQuality(self):
-		findVars = VariableVisitor()
-		self.programTree.accept(findVars)
-		self.variableShort = 0
-		self.variableEnumeration = 0
-		
-		strike = 0
-		name = ''
-		for variable in findVars.variables:
-			name = variable[0]
-			if len(name) > 0:
-				if len(name) < 3:
-					self.variableShort += 1
-					strike += 1
-					if (strike == 3):
-						self.errorList.append([variable[1], 'Use variable names that represent what they\'re being used for'])
-				if re.search(r'\d+', name) != None:
-					if int(re.search(r'\d+', name).group()) > 0:
-						self.variableEnumeration += 1
-						strike += 1
-						if (strike == 3):
-							self.errorList.append([variable[1], 'Avoid using sequentially numbered variables names'])
-		#print 'Variable name strikes: {:d}'.format(strike)
-		variablesScore = 1
-		if strike >= 3:
-			variablesScore = 0
-		#print 'Variable name score: {:d}'.format(variablesScore)
+		result = variables.checkVariableNameQuality(self.programTree, 3)
+		variablesScore = result[0]
+		self.variableShort = result[1]
+		self.variableEnumeration = result[2]
+		self.errorList.extend(result[3])
 		return variablesScore
 
 	def checkIndentation(self):
 		result = indentation.checkIndentation(self.program, 3)
 		self.indentationErrors = result[0]
 		indentationScore = result[1]
+		for error in result[2]:
+			error[0] = self.lineNumber[error[0]]
 		self.errorList.extend(result[2])
 		return indentationScore
 
@@ -430,19 +412,6 @@ class Automark:
 				print 'Internal error with the code checking system'
 
 		return executionScore		
-
-class VariableVisitor(model.Visitor):
-
-	def __init__(self, verbose=False):
-		super(VariableVisitor, self).__init__()
-		self.variables = []
-
-	def leave_VariableDeclaration(self, element):
-		#msg = 'Variable type ({}); name ({}); line no ({})'
-		#print msg.format(element.type, element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno)
-		self.variables.append([element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno])
-		return True
-
 
 #am = Automark('task.java', 'credentials.txt')
 

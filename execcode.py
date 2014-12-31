@@ -66,8 +66,6 @@ class ExecCode:
 		# Spawn the sub-thread to perform compilation and execution of the submission
 		self.submission.start()
 		status = {'item': [Status('error', 'OK'), Status('link', 0)]}
-		
-
 
 		return status
 
