@@ -18,8 +18,12 @@ import plyjext.parser as plyj
 import plyjext.model as model
 import execcode
 import os
+import collections
 import indentation
 import variables
+import comments
+
+Program = collections.namedtuple('Program', ['program', 'programLines', 'fullProgram', 'programTree', 'lineNumber', 'lineCharacterStart'])
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -65,6 +69,8 @@ class Automark:
 		# Store a AST version of the program
 		parser = plyj.Parser()
 		self.programTree = parser.parse_string(self.fullProgram)
+
+		self.programStructure = Program(self.program, self.programLines, self.fullProgram, self.programTree, self.lineNumber, self.lineCharacterStart)
 
 		# Initialise the inputs
 		self.stdin = ''
@@ -247,47 +253,15 @@ class Automark:
 		return outputScore
 
 	def checkCommentQuality(self):
-		# Regex expressions search for block comments or full-line comments.
-		# Multiple full-line comments without other text are considered as a single match
-		blockComments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', self.program, (re.MULTILINE | re.DOTALL)))
-
-		self.commentGapAverage = 1000.0
-		self.commentGapSD = 1000.0
-		lastCommentLine = 0
-		commentCount = len(blockComments)
-		if commentCount > 0:
-			gapSum = 0
-			previousEnd = 0
-			for blockComment in blockComments:
-				gapSum += self.lineFromCharacterNoSpace(blockComment.start()) - previousEnd
-				previousEnd = self.lineFromCharacterNoSpace(blockComment.end()) + 1
-			gapSum += len(self.programLines) - previousEnd
-			self.commentGapAverage = gapSum / float(commentCount)
-
-			gapSumSquared = 0.0
-			previousEnd = 0
-			for blockComment in blockComments:
-				gapSumSquared += ((self.lineFromCharacterNoSpace(blockComment.start()) - previousEnd) - self.commentGapAverage)**2.0
-				previousEnd = self.lineFromCharacterNoSpace(blockComment.end()) + 1
-			gapSumSquared += ((len(self.programLines) - previousEnd) - self.commentGapAverage)**2.0
-			self.commentGapSD = (gapSumSquared / commentCount)**0.5
-			
-			lastCommentLine = self.lineFromCharacter(blockComments[commentCount - 1].end())
-
-		#print 'Comment stats. Gap average: {:f}. Gap SD: {:f}'.format(self.commentGapAverage, self.commentGapSD)
-		commentFrequency = max(1.0 - ((max(self.commentGapAverage - 5.0, 0.0))/2.0), 0.0)
-		commentConsistency = max(1.0 - ((max(self.commentGapSD - 2.0, 0.0))/1.0), 0.0)
-		commentScore = int(round(commentFrequency + commentConsistency))
-		#print 'Comment score: {:d}'.format(commentScore)
-
-		if commentFrequency < 0.75:
-			self.errorList.append([lastCommentLine, 'Try to include more comments in your code'])
-		if commentConsistency < 0.75:
-			self.errorList.append([lastCommentLine, 'Include comments evenly throughout your code, not just in a few places'])
+		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75)
+		commentScore = result[0]
+		self.commentGapAverage = result[1]
+		self.commentGapSD = result[2]
+		self.errorList.extend(result[3])
 		return commentScore
 
 	def checkVariableNameQuality(self):
-		result = variables.checkVariableNameQuality(self.programTree, 3)
+		result = variables.checkVariableNameQuality(self.programStructure, 3)
 		variablesScore = result[0]
 		self.variableShort = result[1]
 		self.variableEnumeration = result[2]
@@ -295,11 +269,9 @@ class Automark:
 		return variablesScore
 
 	def checkIndentation(self):
-		result = indentation.checkIndentation(self.program, 3)
+		result = indentation.checkIndentation(self.programStructure, 3)
 		self.indentationErrors = result[0]
 		indentationScore = result[1]
-		for error in result[2]:
-			error[0] = self.lineNumber[error[0]]
 		self.errorList.extend(result[2])
 		return indentationScore
 

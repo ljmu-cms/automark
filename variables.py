@@ -12,9 +12,9 @@ This script allows a program to be checked using the ideone api.
 import plyjext.model as model
 import re
 
-def checkVariableNameQuality(programTree, threshold):
+def checkVariableNameQuality(program, threshold):
 	findVars = VariableVisitor()
-	programTree.accept(findVars)
+	program.programTree.accept(findVars)
 	variableShort = 0
 	variableEnumeration = 0
 	

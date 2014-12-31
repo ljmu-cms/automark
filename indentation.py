@@ -21,13 +21,12 @@ def substring(line, tab, start):
 	return match
 
 def checkIndentationType(program, tab):
-	programLines = program.splitlines()
 	indentationErrors = 0
 	tabsize = len(tab)
 	indent = 0
 	lineNum = 0
 	firstError = 0
-	for line in programLines:
+	for line in program.programLines:
 		add = line.count('{') * tabsize
 		sub = line.count('}') * tabsize
 		tabs = 0
@@ -56,7 +55,7 @@ def checkIndentation(program, threshold):
 
 	errorList = []
 	if indentationErrors > threshold:
-		errorList.append([minError[1], 'Indentation error'])
+		errorList.append([program.lineNumber[minError[1]], 'Indentation error'])
 		indentatinoScore = 0
 	else:
 		indentatinoScore = 1
