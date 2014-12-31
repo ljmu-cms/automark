@@ -36,14 +36,14 @@ class Automark:
 			self.classname = os.path.splitext(os.path.split(filename)[1])[0]
 	
 		# Load in the program from file
-		self.fullProgram = ''
+		fullProgram = ''
 		with open(filename) as file:
-			self.fullProgram = file.read()
+			fullProgram = file.read()
 
-		self.program = ""
-		self.lineNumber = []
+		program = ""
+		lineNumber = []
 		self.errorList = []
-		self.lineCharacterStart = []
+		lineCharacterStart = []
 		foundMain = True
 		linesRead = 1
 		linesAdded = 0
@@ -53,24 +53,23 @@ class Automark:
 				if not line.startswith('package '):
 					if (not foundMain) and (line.find('public class') >= 0):
 						line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
-						#line = line.replace('public class', 'class', 1)
 						foundMain = True
 					if not (line.isspace() or (len(line) == 0)):
-						self.program += line
-						self.lineNumber.append(linesRead)
-						self.lineCharacterStart.append(characterPos)
+						program += line
+						lineNumber.append(linesRead)
+						lineCharacterStart.append(characterPos)
 						linesAdded += 1
 						characterPos += len(line)
 				linesRead += 1
 
 		# Store a line-delimited version of the program 
-		self.programLines = self.program.splitlines()
+		programLines = program.splitlines()
 		
 		# Store a AST version of the program
 		parser = plyj.Parser()
-		self.programTree = parser.parse_string(self.fullProgram)
+		programTree = parser.parse_string(fullProgram)
 
-		self.programStructure = Program(self.program, self.programLines, self.fullProgram, self.programTree, self.lineNumber, self.lineCharacterStart)
+		self.programStructure = Program(program, programLines, fullProgram, programTree, lineNumber, lineCharacterStart)
 
 		# Initialise the inputs
 		self.stdin = ''
@@ -101,12 +100,10 @@ class Automark:
 		self.indentationScore = self.checkIndentation()
 		self.executionScore = self.checkExecution()
 		
-		#self.printErrorList()
-
 		print 'Final score: {:d}\n'.format(self.getTotalScore())
 
 	def getFullProgram(self):
-		return self.fullProgram
+		return self.programStructure.fullProgram
 
 	def getTotalScore(self):
 		totalScore = self.commentScore + self.variablesScore + self.indentationScore + self.executionScore
@@ -202,16 +199,6 @@ class Automark:
 			errorList += str(error[0]) + ' : ' + error[1] + '\n'
 		print errorList
 
-
-	def lineFromCharacterNoSpace(self, charPos):
-		line = 0
-		while (line < len(self.lineCharacterStart)) and (charPos >= self.lineCharacterStart[line]):
-			line += 1
-		return line
-
-	def lineFromCharacter(self, charPos):
-		return self.lineNumber[self.lineFromCharacterNoSpace(charPos) - 1]
-
 	# Prints output and gives result
 	# True - Success; the output appears correct
 	# False - Failure; the output looks incorrect
@@ -298,7 +285,7 @@ class Automark:
 		#print 'Inputs used: {:d}, {:d}, {:d}'.format(width, height, depth)
 
 		error = 'OK'
-		response = wsdlObject.createSubmission(self.user, self.password, self.program, 10, self.stdin, True, True)
+		response = wsdlObject.createSubmission(self.user, self.password, self.programStructure.program, 10, self.stdin, True, True)
 		error = self.getErrorStatus(response)
 		if error != 'OK':
 			print 'Error: ' + error
@@ -341,13 +328,11 @@ class Automark:
 				self.executionTime = self.getValue(response, 'time')
 				output = self.getValue(response, 'output')
 				self.programOutput = output
-				#print 'Execution time: {:f}s'.format(self.executionTime)
 				result = self.checkOutputCorrectness(output, width, height, depth)
 				executionScore += result
 				if result > 0:
 					executionScore -= 1
 				self.executionComments = 'Execution failed to complete (time limit exceeded).'
-
 			elif result == 17:
 				executionScore += 1
 				print 'Memory limit exceeded'
@@ -367,14 +352,9 @@ class Automark:
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				self.checkErrorStatus(response)
 				self.executionTime = self.getValue(response, 'time')
-				#print 'Execution time: {:f}s'.format(self.executionTime)
 				self.memoryUsed = self.getValue(response, 'memory')
-				#print 'Memory used: {} bytes'.format(self.memoryUsed)
 				date = self.getValue(response, 'date')
-				#print 'Date submitted: ' + date
 				output = self.getValue(response, 'output')
-				#print
-				#print 'Output: ' + output
 				self.programOutput = output
 				result = self.checkOutputCorrectness(output, width, height, depth)
 				executionScore += result
@@ -384,6 +364,4 @@ class Automark:
 				print 'Internal error with the code checking system'
 
 		return executionScore		
-
-#am = Automark('task.java', 'credentials.txt')
 
