@@ -270,7 +270,7 @@ class Automark:
 		wsdlObject = execcode.ExecCode('build', self.classname)
 
 		# Check the available languages
-		#response = wsdlObject.getLanguages(user, password);
+		#response = wsdlObject.getLanguages(self.user, self.password);
 		#print response['item'][1].value['item']
 		#	We don't need to check the languages every time
 		#	Just use:
