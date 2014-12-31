@@ -18,6 +18,7 @@ import plyjext.parser as plyj
 import plyjext.model as model
 import execcode
 import os
+import indentation
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -313,57 +314,12 @@ class Automark:
 		#print 'Variable name score: {:d}'.format(variablesScore)
 		return variablesScore
 
-	@staticmethod
-	def substring(line, tab, start):
-		match = True
-		if (len(tab) + start) <= len(line):
-			for position in range(0, len(tab)):
-				if line[start + position] != tab[position]:
-					match = False
-		else:
-			match = False
-		return match
-
 	def checkIndentation(self):
-		indentErrors = []
-		indentErrors.append(self.checkIndentationType('\t'))
-		indentErrors.append(self.checkIndentationType('  '))
-		indentErrors.append(self.checkIndentationType('   '))
-		indentErrors.append(self.checkIndentationType('    '))
-
-		minError, minErrorIndex = min((val, idx) for (idx, val) in enumerate(indentErrors))
-		self.indentationErrors = minError[0]
-
-		if self.indentationErrors > 3:
-			self.errorList.append([minError[1], 'Indentation error'])
-			indentatinoScore = 0
-		else:
-			indentatinoScore = 1
-		#print 'Indentation score: {:d} with {:d} errors'.format(indentatinoScore, self.indentationErrors)
-		return indentatinoScore
-
-	def checkIndentationType(self, tab):
-		indentationErrors = 0
-		tabsize = len(tab)
-		indent = 0
-		lineNum = 0
-		firstError = 0
-		for line in self.programLines:
-			add = line.count('{') * tabsize
-			sub = line.count('}') * tabsize
-			tabs = 0
-			#while line[tabs] == '\t':
-			while Automark.substring(line, tab, tabs):
-				tabs += tabsize
-			indent -= sub
-			if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == ' ')):
-				indentationErrors += 1
-				if indentationErrors <= 1:
-					firstError = lineNum
-				indent = tabs
-			indent += add
-			lineNum += 1
-		return [indentationErrors, self.lineNumber[firstError]]
+		result = indentation.checkIndentation(self.program, 3)
+		self.indentationErrors = result[0]
+		indentationScore = result[1]
+		self.errorList.extend(result[2])
+		return indentationScore
 
 	def checkExecution(self):
 		executionScore = 0
