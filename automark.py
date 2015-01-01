@@ -14,16 +14,13 @@ from SOAPpy import WSDL
 import time
 import re
 import random
-import plyjext.parser as plyj
-import plyjext.model as model
 import execcode
 import os
 import collections
 import indentation
 import variables
 import comments
-
-Program = collections.namedtuple('Program', ['program', 'programLines', 'fullProgram', 'programTree', 'lineNumber', 'lineCharacterStart'])
+import srctransform
 
 class Automark:
 	def __init__(self, filename, credentialsFile):
@@ -34,42 +31,9 @@ class Automark:
 			self.score = 0
 			self.filename = filename
 			self.classname = os.path.splitext(os.path.split(filename)[1])[0]
-	
-		# Load in the program from file
-		fullProgram = ''
-		with open(filename) as file:
-			fullProgram = file.read()
 
-		program = ""
-		lineNumber = []
-		self.errorList = []
-		lineCharacterStart = []
-		foundMain = True
-		linesRead = 1
-		linesAdded = 0
-		characterPos = 0
-		with open(filename) as file:
-			for line in file.xreadlines():
-				if not line.startswith('package '):
-					if (not foundMain) and (line.find('public class') >= 0):
-						line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
-						foundMain = True
-					if not (line.isspace() or (len(line) == 0)):
-						program += line
-						lineNumber.append(linesRead)
-						lineCharacterStart.append(characterPos)
-						linesAdded += 1
-						characterPos += len(line)
-				linesRead += 1
-
-		# Store a line-delimited version of the program 
-		programLines = program.splitlines()
-		
-		# Store a AST version of the program
-		parser = plyj.Parser()
-		programTree = parser.parse_string(fullProgram)
-
-		self.programStructure = Program(program, programLines, fullProgram, programTree, lineNumber, lineCharacterStart)
+		# Load in the program file	
+		self.programStructure = srctransform.loadsource(filename)
 
 		# Initialise the inputs
 		self.stdin = ''
@@ -82,6 +46,8 @@ class Automark:
 		self.executionScore = 0
 
 		# Initialise the internal stats
+		self.errorList = []
+		self.inputs = []
 		self.commentGapAverage = 0.0
 		self.commentGapSD = 0.0
 		self.variableShort = 0
@@ -154,26 +120,30 @@ class Automark:
 		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, self.programOutput.encode('ascii', 'replace'), self.outputCheck[0], self.outputCheck[1]]
 		return stats
 
-	def getErrorStatus(self, response):
+	@staticmethod
+	def getErrorStatus(response):
 		error = 'OK'
 		for item in response['item']:
 			if item.key == 'error' and item.value != 'OK':
 				error = item.value
 		return error
 
-	def getValue(self, response, key):
+	@staticmethod
+	def getValue(response, key):
 		value = ''
 		for item in response['item']:
 			if item.key == key:
 				value = item.value
 		return value
 
-	def checkErrorStatus(self, response):
-		error = self.getErrorStatus(response)
+	@staticmethod
+	def checkErrorStatus(response):
+		error = Automark.getErrorStatus(response)
 		if error != 'OK':
 			print 'Error: ' + error
 
-	def checkSubmissionsStatus(self, status):
+	@staticmethod
+	def checkSubmissionsStatus(status):
 		if status < 0:
 			print 'Waiting for compilation'
 		elif status == 1:
@@ -193,23 +163,36 @@ class Automark:
 	def getErrorList(self):
 		return self.errorList
 
-	def printErrorList(self):
-		errorList = ''
-		for error in self.errorList:
-			errorList += str(error[0]) + ' : ' + error[1] + '\n'
-		print errorList
+	@staticmethod
+	def printErrorList(errorList):
+		errorText = ''
+		for error in errorList:
+			errorText += str(error[0]) + ' : ' + error[1] + '\n'
+		print errorText
+
+	@staticmethod
+	def setupInputs():
+		width = random.randint(1, 100)
+		height = random.randint(1, 100)
+		depth = random.randint(1, 100)
+		stdin = "{}\n{}\n{}\n".format(width, height, depth)
+		return [stdin, width, height, depth]
 
 	# Prints output and gives result
 	# True - Success; the output appears correct
 	# False - Failure; the output looks incorrect
-	def checkOutputCorrectness(self, output, width, height, depth):
-		self.outputCheck[0] = False
-		self.outputCheck[1] = False
+	@staticmethod
+	def checkOutputCorrectness(output, inputs):
+		width = inputs[1]
+		height = inputs[2]
+		depth = inputs[3]
+		outputCheck = [False, False]
 		outputScore = 0
 		output = re.sub("\n\s*\n*", "\n", output)
 		lines = output.splitlines()
 		volume = -1
 		concat = ''
+		executionComments = ''
 
 		correctVolume = (width * height * depth)
 		correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
@@ -227,17 +210,17 @@ class Automark:
 
 		if volumeFound:
 			outputScore += 2
-			self.outputCheck[0] = True
+			outputCheck[0] = True
 		else:
-			self.executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
+			executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
 
 		if concatFound:
 			outputScore += 2
-			self.outputCheck[1] = True
+			outputCheck[1] = True
 		else:
-			self.executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
+			executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
 
-		return outputScore
+		return [outputScore, executionComments, outputCheck]
 
 	def checkCommentQuality(self):
 		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75)
@@ -278,19 +261,16 @@ class Automark:
 		#		{'value': 'C++11 (gcc-4.8.1)', 'key': 44}
 
 		# Choose random input variables
-		width = random.randint(1, 100)
-		height = random.randint(1, 100)
-		depth = random.randint(1, 100)
-		self.stdin = "{}\n{}\n{}\n".format(width, height, depth)
-		#print 'Inputs used: {:d}, {:d}, {:d}'.format(width, height, depth)
+		self.inputs = self.setupInputs()
+		self.stdin = self.inputs[0]
 
 		error = 'OK'
 		response = wsdlObject.createSubmission(self.user, self.password, self.programStructure.program, 10, self.stdin, True, True)
-		error = self.getErrorStatus(response)
+		error = Automark.getErrorStatus(response)
 		if error != 'OK':
 			print 'Error: ' + error
 		else:
-			link = self.getValue(response, 'link')
+			link = Automark.getValue(response, 'link')
 
 			# Periodically check the submission status
 			status = -1;
@@ -299,17 +279,17 @@ class Automark:
 				time.sleep(waitTime)
 				waitTime = 3
 				response = wsdlObject.getSubmissionStatus(self.user, self.password, link)
-				self.checkErrorStatus(response)
-				status = self.getValue(response, 'status')
-				self.checkSubmissionsStatus (status)
+				Automark.checkErrorStatus(response)
+				status = Automark.getValue(response, 'status')
+				Automark.checkSubmissionsStatus (status)
 
 			# Find out what happened to the program
-			result = self.getValue(response, 'result')
+			result = Automark.getValue(response, 'result')
 			self.executionResult = result
 			if result == 11:
 				print 'Compilation error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, True)
-				compInfo = self.getValue(response, 'cmpinfo')
+				compInfo = Automark.getValue(response, 'cmpinfo')
 				print 'Compilation output: ' + compInfo
 				self.programOutput = compInfo
 				self.executionComments = 'Program failed to compile.'
@@ -317,7 +297,7 @@ class Automark:
 				executionScore += 1
 				print 'Runtime error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
-				stdErrOutput = self.getValue(response, 'stderr')
+				stdErrOutput = Automark.getValue(response, 'stderr')
 				print 'Runtime error: ' + stdErrOutput
 				self.programOutput = stdErrOutput
 				self.executionComments = 'Runtime error occurred during execution.'
@@ -325,40 +305,44 @@ class Automark:
 				executionScore += 1
 				print 'Time limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
-				self.executionTime = self.getValue(response, 'time')
-				output = self.getValue(response, 'output')
+				self.executionTime = Automark.getValue(response, 'time')
+				output = Automark.getValue(response, 'output')
 				self.programOutput = output
-				result = self.checkOutputCorrectness(output, width, height, depth)
-				executionScore += result
-				if result > 0:
+				result = Automark.checkOutputCorrectness(output, self.inputs)
+				executionScore += result[0]
+				self.executionComments += result[1]
+				self.outputCheck = result[2]
+				if result[0] > 0:
 					executionScore -= 1
 				self.executionComments = 'Execution failed to complete (time limit exceeded).'
 			elif result == 17:
 				executionScore += 1
 				print 'Memory limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
-				self.memoryUsed = self.getValue(response, 'memory')
+				self.memoryUsed = Automark.getValue(response, 'memory')
 				print 'Memory used: {} bytes'.format(self.memoryUsed)
 				self.executionComments = 'Execution failed to complete (ran out of memory).'
 			elif result == 19:
 				print 'Illegal system call'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
-				stdErrOutput = self.getValue(response, 'stderr')
+				stdErrOutput = Automark.getValue(response, 'stderr')
 				print 'Error output: ' + stdErrOutput
 				self.programOutput = stdErrOutput
 				self.executionComments = 'Execution failed to complete (illegal system call).'
 			elif result == 15:
 				executionScore += 1
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
-				self.checkErrorStatus(response)
-				self.executionTime = self.getValue(response, 'time')
-				self.memoryUsed = self.getValue(response, 'memory')
-				date = self.getValue(response, 'date')
-				output = self.getValue(response, 'output')
+				Automark.checkErrorStatus(response)
+				self.executionTime = Automark.getValue(response, 'time')
+				self.memoryUsed = Automark.getValue(response, 'memory')
+				date = Automark.getValue(response, 'date')
+				output = Automark.getValue(response, 'output')
 				self.programOutput = output
-				result = self.checkOutputCorrectness(output, width, height, depth)
-				executionScore += result
-				if result == 4:
+				result = Automark.checkOutputCorrectness(output, self.inputs)
+				executionScore += result[0]
+				self.executionComments += result[1]
+				self.outputCheck = result[2]
+				if result[0] == 4:
 					self.executionComments = 'Your outputs correctly match the specification.\n'
 			else:
 				print 'Internal error with the code checking system'
