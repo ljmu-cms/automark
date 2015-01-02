@@ -15,10 +15,11 @@ import xlrd
 import os
 import subprocess
 import argparse
-import automark
+import automarktask1
+import automarktask2
 import time
 
-class HouseKeepingAutomark:
+class BatchMark:
 	def __init__(self, feedback_doc_name, marking_sheet_name, marker_name):
 		print ("Feedback template: " + feedback_doc_name)
 		print ("Marking sheet: " + marking_sheet_name)
@@ -38,8 +39,8 @@ class HouseKeepingAutomark:
 		self.construct_name_map()
 		with open('summary.csv', 'w') as self.summary:
 			self.outputcsv_co(['Username', 'Name'])
-			self.outputcsv_co(automark.Automark.getScoresStructure())
-			self.outputcsv_nl(automark.Automark.getInternalStatsStructure())
+			self.outputcsv_co(automarktask1.Automark.getScoresStructure())
+			self.outputcsv_nl(automarktask1.Automark.getInternalStatsStructure())
 			self.create_new_feedback_document()
 
 	#probably won't work for Windows
@@ -70,7 +71,7 @@ class HouseKeepingAutomark:
 		self.outputcsv(items)
 		self.summary.write('\n')
 
-	def automark (self, directory):
+	def mark (self, directory):
 		java_file = ''
 		for check_dir, _, file in os.walk(directory):
 			if '__MACOSX' not in check_dir.split('/'):
@@ -90,13 +91,13 @@ class HouseKeepingAutomark:
 				print 'Student: {}'.format(student_dir_name)
 				student_name = self.name_map[student_dir_name][0] + ' ' + self.name_map[student_dir_name][1]
 				self.unzip_submission(student_dir)
-				java_path = self.automark(student_dir)
+				java_path = self.mark(student_dir)
 				if java_path == '':
 					print 'No java file'
 					self.write_student_name_to_document(student_dir, student_dir_name, student_name)
 				else:
 					#print 'file: {}'.format(java_path)
-					marks = automark.Automark(java_path, 'credentials.txt')
+					marks = automarktask1.Automark(java_path, 'credentials.txt')
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
 					self.write_comments_to_document(student_dir, student_dir_name, marks)
 					self.outputcsv_co([student_dir_name, student_name])
@@ -213,7 +214,7 @@ parser.add_argument('task', metavar='TASK', type=str, help='Task number (e.g. 1)
 parser.add_argument('initials', metavar='INITIALS', type=str, help='Marker initials (e.g. PH)')
 args = parser.parse_args()
 
-hk = HouseKeepingAutomark('feedback_username_task' + args.task + '.docx','4001COMP Marking 2014-15 CW1-T' + args.task + '.xlsx',args.initials)
+hk = BatchMark('feedback_username_task' + args.task + '.docx','4001COMP Marking 2014-15 CW1-T' + args.task + '.xlsx',args.initials)
 hk.go()
 
 end = time.time()
