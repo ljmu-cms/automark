@@ -204,17 +204,18 @@ class BatchMark:
 		comments = marks.getErrorList()
 		lineNum = 1
 		for line in program:
+			line_encoded = line.decode('ascii', 'replace')
 			highlight = False
 			for comment in comments:
 				if comment[0] == lineNum:
 					highlight = True
 			if highlight:
-				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line, style='CodeChunkHighlight')
+				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line_encoded, style='CodeChunkHighlight')
 				for comment in comments:
 					if comment[0] == lineNum:
 						feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
 			else:
-				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line, style='CodeChunk')
+				feedback_document.add_paragraph(str(lineNum) + '\t: ' + line_encoded, style='CodeChunk')
 			lineNum += 1
 		for comment in comments:
 			if comment[0] == 0:

@@ -14,6 +14,7 @@ import os
 from subprocess import PIPE, Popen, STDOUT
 import time
 import collections
+import shutil
 try:
     from Queue import Queue, Empty
 except ImportError:
@@ -53,10 +54,12 @@ class ExecCode:
 		# Create the temp folder if it doesn't already exist
 		if not os.path.exists(self.tempfolder):
 			os.makedirs(self.tempfolder)
+		if not os.path.exists(self.tempfolder + '/uk'):
+			shutil.copytree('java/uk', self.tempfolder + '/uk')
 
 		# Create the temporary source file to build based on the source code provided
 		self.tempsource = os.path.join(self.tempfolder, self.tempsourceleaf)
-		ExecCode.tidyup(self.tempfolder, self.tempsource)
+		ExecCode.tidyup(self.tempfolder)
 		with open(self.tempsource, 'w') as file:
 			file.write(sourceCode)
 
@@ -153,13 +156,10 @@ class ExecCode:
 		return None
 
 	@staticmethod
-	def tidyup(tempfolder, tempsource):
-		#self.tempsource = os.path.join(self.tempfolder, self.tempsourceleaf)
-		if os.path.isfile(tempsource):
-			os.remove(tempsource)
-
+	def tidyup(tempfolder):
 		for file in os.listdir(tempfolder):
-			if os.path.splitext(file)[1] == '.class':
+			extension = os.path.splitext(file)[1]
+			if (extension == '.class') or (extension == '.java'):
 				path = os.path.join(tempfolder, file)
 				os.remove(path)
 
@@ -284,7 +284,7 @@ class ExecCode:
 				# The Java compiler is present
 				self.setSubmissionStatus('OK', 1, 0)
 				# Execuate the compilation as a subprocess
-				program = Popen(['javac', '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=STDOUT, stdin=PIPE, stdout=PIPE)
+				program = Popen(['javac', '-classpath', tempfolder, '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=STDOUT, stdin=PIPE, stdout=PIPE)
 				# Collect any outputs from the compilation process
 				output = program.stdout.read()
 				program.communicate()

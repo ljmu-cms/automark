@@ -36,6 +36,7 @@ def loadsource(filename):
 				if (not foundMain) and (line.find('public class') >= 0):
 					line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
 					foundMain = True
+				line = re.sub(r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', line)
 				if not (line.isspace() or (len(line) == 0)):
 					program += line
 					lineNumber.append(linesRead)

@@ -20,8 +20,7 @@ class Automark(automark.Automark):
 	def __init__(self, filename, credentialsFile, build_dir):
 		automark.Automark.__init__(self, filename, credentialsFile, build_dir)
 
-	@staticmethod
-	def setupInputs():
+	def setupInputs(self):
 		width = random.randint(1, 100)
 		height = random.randint(1, 100)
 		depth = random.randint(1, 100)
@@ -31,8 +30,7 @@ class Automark(automark.Automark):
 	# Prints output and gives result
 	# True - Success; the output appears correct
 	# False - Failure; the output looks incorrect
-	@staticmethod
-	def checkOutputCorrectness(output, inputs):
+	def checkOutputCorrectness(self, output, inputs):
 		width = inputs[1]
 		height = inputs[2]
 		depth = inputs[3]

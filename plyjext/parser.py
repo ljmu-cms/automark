@@ -925,27 +925,27 @@ class StatementParser(object):
 
     def p_class_instance_creation_expression(self, p):
         '''class_instance_creation_expression : NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[3], type_arguments=p[3], arguments=p[5], body=p[7])
+        p[0] = InstanceCreation(p[3], type_arguments=p[3], arguments=p[5], body=p[7], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression2(self, p):
         '''class_instance_creation_expression : NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[2], arguments=p[4], body=p[6])
+        p[0] = InstanceCreation(p[2], arguments=p[4], body=p[6], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression3(self, p):
         '''class_instance_creation_expression : primary '.' NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[5], enclosed_in=p[1], type_arguments=p[4], arguments=p[7], body=p[9])
+        p[0] = InstanceCreation(p[5], enclosed_in=p[1], type_arguments=p[4], arguments=p[7], body=p[9], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression4(self, p):
         '''class_instance_creation_expression : primary '.' NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[4], enclosed_in=p[1], arguments=p[6], body=p[8])
+        p[0] = InstanceCreation(p[4], enclosed_in=p[1], arguments=p[6], body=p[8], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression5(self, p):
         '''class_instance_creation_expression : class_instance_creation_expression_name NEW class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[3], enclosed_in=p[1], arguments=p[5], body=p[7])
+        p[0] = InstanceCreation(p[3], enclosed_in=p[1], arguments=p[5], body=p[7], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression6(self, p):
         '''class_instance_creation_expression : class_instance_creation_expression_name NEW type_arguments class_type '(' argument_list_opt ')' class_body_opt'''
-        p[0] = InstanceCreation(p[4], enclosed_in=p[1], type_arguments=p[3], arguments=p[6], body=p[8])
+        p[0] = InstanceCreation(p[4], enclosed_in=p[1], type_arguments=p[3], arguments=p[6], body=p[8], lineno=p.lineno(1))
 
     def p_class_instance_creation_expression_name(self, p):
         '''class_instance_creation_expression_name : name '.' '''

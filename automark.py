@@ -131,7 +131,6 @@ class Automark:
 		return stats
 
 	def getOutputChecks(self):
-		print self.outputCheck
 		return self.outputCheck
 
 	@staticmethod
@@ -184,16 +183,14 @@ class Automark:
 			errorText += str(error[0]) + ' : ' + error[1] + '\n'
 		print errorText
 
-	@staticmethod
-	def setupInputs():
+	def setupInputs(self):
 		stdin = ""
 		return [stdin]
 
 	# Prints output and gives result
 	# True - Success; the output appears correct
 	# False - Failure; the output looks incorrect
-	@staticmethod
-	def checkOutputCorrectness(output, inputs):
+	def checkOutputCorrectness(self, output, inputs):
 		outputCheck = []
 		outputScore = 0
 		output = re.sub("\n\s*\n*", "\n", output)
@@ -322,8 +319,8 @@ class Automark:
 				executionScore += result[0]
 				self.executionComments += result[1]
 				self.outputCheck = result[2]
-				if result[0] == 4:
-					self.executionComments = 'Your outputs correctly match the specification.\n'
+				if result[0] == 5:
+					self.executionComments += 'Your outputs correctly match the specification.\n'
 			else:
 				print 'Internal error with the code checking system'
 

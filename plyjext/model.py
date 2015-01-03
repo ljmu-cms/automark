@@ -704,10 +704,10 @@ class ConstructorInvocation(Statement):
 class InstanceCreation(Expression):
 
     def __init__(self, type, type_arguments=None, arguments=None, body=None,
-                 enclosed_in=None):
+                 enclosed_in=None, lineno=0):
         super(InstanceCreation, self).__init__()
         self._fields = [
-            'type', 'type_arguments', 'arguments', 'body', 'enclosed_in']
+            'type', 'type_arguments', 'arguments', 'body', 'enclosed_in', 'lineno']
         if type_arguments is None:
             type_arguments = []
         if arguments is None:
@@ -719,6 +719,7 @@ class InstanceCreation(Expression):
         self.arguments = arguments
         self.body = body
         self.enclosed_in = enclosed_in
+        self.lineno = lineno
 
 
 class FieldAccess(Expression):
