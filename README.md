@@ -25,7 +25,7 @@ For example:
 python batchmark.py 1 ./DLJ
 ```
 
-There are other parameters for controlling where to find inputs and store outputs. Full usage details can be obtained using `pytho batchmark.py -h` at the command line to get the following.
+There are other parameters for controlling where to find inputs and store outputs. Full usage details can be obtained using `python batchmark.py -h` at the command line to get the following.
 
 ```
 usage: batchmark.py [-h] [-i INITIALS] [-b BUILD] [-t TEMPLATE] [-d DETAILS]
