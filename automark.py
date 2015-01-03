@@ -23,6 +23,8 @@ import comments
 import srctransform
 
 class Automark:
+	outputChecks = 0
+
 	def __init__(self, filename, credentialsFile, build_dir):
 		# Read in the credentials from file
 		with open(credentialsFile) as file:
@@ -103,7 +105,16 @@ class Automark:
 
 	@staticmethod
 	def getInternalStatsStructure():
-		return ['Gap average', 'Gap SD', 'Variables short', 'Variables enumerated', 'Indentation errors', 'Execution time', 'Memory used', 'Execution input', 'Execution result',  'Execution output', 'Output check 0', 'Output check 1']
+		return ['Gap average', 'Gap SD', 'Variables short', 'Variables enumerated', 'Indentation errors', 'Execution time', 'Memory used', 'Execution input', 'Execution result',  'Execution output']
+
+	@classmethod
+	def getOutputChecksStructure(cls):
+		structure = []
+		count = 0
+		for output in range(0, cls.outputChecks):
+			structure.append('Output check {:d}'.format(count))
+			count += 1
+		return structure
 
 	def getInternalStats(self):
 		# Comment gap average
@@ -116,10 +127,12 @@ class Automark:
 		# Execution input
 		# Execution result
 		# Execution output
-		# Output check 0
-		# Output checl 1
-		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, self.programOutput.encode('ascii', 'replace'), self.outputCheck[0], self.outputCheck[1]]
+		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, self.programOutput.encode('ascii', 'replace')]
 		return stats
+
+	def getOutputChecks(self):
+		print self.outputCheck
+		return self.outputCheck
 
 	@staticmethod
 	def getErrorStatus(response):
@@ -173,53 +186,19 @@ class Automark:
 
 	@staticmethod
 	def setupInputs():
-		width = random.randint(1, 100)
-		height = random.randint(1, 100)
-		depth = random.randint(1, 100)
-		stdin = "{}\n{}\n{}\n".format(width, height, depth)
-		return [stdin, width, height, depth]
+		stdin = ""
+		return [stdin]
 
 	# Prints output and gives result
 	# True - Success; the output appears correct
 	# False - Failure; the output looks incorrect
 	@staticmethod
 	def checkOutputCorrectness(output, inputs):
-		width = inputs[1]
-		height = inputs[2]
-		depth = inputs[3]
-		outputCheck = [False, False]
+		outputCheck = []
 		outputScore = 0
 		output = re.sub("\n\s*\n*", "\n", output)
 		lines = output.splitlines()
-		volume = -1
-		concat = ''
 		executionComments = ''
-
-		correctVolume = (width * height * depth)
-		correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
-		volumeFound = False
-		concatFound = False
-		for line in lines:
-			if re.search(r'\d+', line) != None:
-				volume = int(re.search(r'\d+', line).group())
-				if (volume == correctVolume):
-					volumeFound = True
-			if re.search(r'\d+', line) != None:
-				concat = re.search(r'\d+', line).group()
-				if (concat == correctConcat):
-					concatFound = True
-
-		if volumeFound:
-			outputScore += 2
-			outputCheck[0] = True
-		else:
-			executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
-
-		if concatFound:
-			outputScore += 2
-			outputCheck[1] = True
-		else:
-			executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
 
 		return [outputScore, executionComments, outputCheck]
 
@@ -309,7 +288,7 @@ class Automark:
 				self.executionTime = Automark.getValue(response, 'time')
 				output = Automark.getValue(response, 'output')
 				self.programOutput = output
-				result = Automark.checkOutputCorrectness(output, self.inputs)
+				result = self.checkOutputCorrectness(output, self.inputs)
 				executionScore += result[0]
 				self.executionComments += result[1]
 				self.outputCheck = result[2]
@@ -339,7 +318,7 @@ class Automark:
 				date = Automark.getValue(response, 'date')
 				output = Automark.getValue(response, 'output')
 				self.programOutput = output
-				result = Automark.checkOutputCorrectness(output, self.inputs)
+				result = self.checkOutputCorrectness(output, self.inputs)
 				executionScore += result[0]
 				self.executionComments += result[1]
 				self.outputCheck = result[2]

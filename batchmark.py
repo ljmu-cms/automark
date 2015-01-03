@@ -15,6 +15,7 @@ import xlrd
 import os
 import subprocess
 import argparse
+import automark
 import automarktask1
 import automarktask2
 import time
@@ -45,6 +46,14 @@ class BatchMark:
 		self.marking_sheet_name = marking_sheet_name
 		self.summary_out = summary_out
 
+		# Select the appropriate task
+		tasks = [automark, automarktask1, automarktask2]
+		if (self.task < len(tasks)) and (self.task >= 0):
+			self.taskSpecific = tasks[self.task]
+		else:
+			self.taskSpecific = tasks[0]
+			print 'Task number out of bounds. Applying general checks.'
+
 		#load student feedback form as a template
 		self.feedback_document = Document(feedback_doc_name)
 		#load my marking sheet 'PT' from workbook
@@ -57,8 +66,9 @@ class BatchMark:
 		self.construct_name_map()
 		with open(self.summary_out, 'w') as self.summary:
 			self.outputcsv_co(['Username', 'Name'])
-			self.outputcsv_co(automarktask1.Automark.getScoresStructure())
-			self.outputcsv_nl(automarktask1.Automark.getInternalStatsStructure())
+			self.outputcsv_co(self.taskSpecific.Automark.getScoresStructure())
+			self.outputcsv_co(self.taskSpecific.Automark.getInternalStatsStructure())
+			self.outputcsv_nl(self.taskSpecific.Automark.getOutputChecksStructure())
 			self.create_new_feedback_document()
 
 	#probably won't work for Windows
@@ -115,13 +125,13 @@ class BatchMark:
 					self.write_student_name_to_document(student_dir, student_dir_name, student_name)
 				else:
 					#print 'file: {}'.format(java_path)
-					marks = automarktask1.Automark(java_path, 'credentials.txt', self.buid_dir)
+					marks = self.taskSpecific.Automark(java_path, 'credentials.txt', self.buid_dir)
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
 					self.write_comments_to_document(student_dir, student_dir_name, marks)
 					self.outputcsv_co([student_dir_name, student_name])
 					self.outputcsv_co(marks.getScores())
-					self.outputcsv_nl(marks.getInternalStats())
-
+					self.outputcsv_co(marks.getInternalStats())
+					self.outputcsv_nl(marks.getOutputChecks())
 
 				#just do something extra
 				#self.unzip_submission(student_dir)
@@ -129,6 +139,7 @@ class BatchMark:
 	def write_details_to_document(self, student_dir, student_dir_name, student_name, marks):
 		#default cell for student's firstname lastname
 		filename = self.feedback_doc_name.replace('username', student_dir_name)
+		self.feedback_document.paragraphs[0].text = self.feedback_document.paragraphs[0].text.replace('<task>', str(self.task))
 		self.feedback_document.tables[0].cell(1,0).text = student_name
 		self.feedback_document.tables[0].cell(1,1).text = student_dir_name
 		#self.feedback_document.tables[0].cell(1,2).text = self.marker_name
@@ -238,7 +249,7 @@ start = time.time()
 parser = argparse.ArgumentParser(description='Batch marker for 4001COMP Java programming.')
 
 # Required parameters
-parser.add_argument('task', metavar='TASK', type=str, help='Task number (e.g. 1)')
+parser.add_argument('task', metavar='TASK', type=int, help='Task number (e.g. 1)')
 parser.add_argument('workdir', metavar='WORK', type=str, help='Folder containing students\' folders (e.g. ./DLJ)')
 
 # Optional parameters
