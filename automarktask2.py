@@ -13,6 +13,6 @@ This script allows a program to be checked using the ideone api.
 import automark
 
 class Automark(automark.Automark):
-	def __init__(self, filename, credentialsFile):
-		automark.Automark.__init__(self, filename, credentialsFile)
+	def __init__(self, filename, credentialsFile, build_dir):
+		automark.Automark.__init__(self, filename, credentialsFile, build_dir)
 

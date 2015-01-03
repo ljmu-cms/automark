@@ -19,14 +19,32 @@ import automarktask1
 import automarktask2
 import time
 
+# Task number
+# Folder containing students' folders
+# Marker's initials (optional)
+# Temp build folder (optional)
+# Feedback template (optional)
+# Student details list (optional)
+# Summary output (optional)
+
 class BatchMark:
-	def __init__(self, feedback_doc_name, marking_sheet_name, marker_name):
+	def __init__(self, task, marking_dir, marker_name, build_dir, feedback_doc_name, marking_sheet_name, summary_out):
+		print ('Task: ' + str(task))
+		print ("Folder to check in: " + marking_dir)
+		print ('Marker name: ' + marker_name)
+		print ("Build output folder: " + build_dir)
 		print ("Feedback template: " + feedback_doc_name)
 		print ("Marking sheet: " + marking_sheet_name)
-		print ("Folder to check in: " + marker_name)
+		print ("Summary output: " + summary_out)
 
-		self.feedback_doc_name = feedback_doc_name
+		self.task = task
+		self.marking_dir = marking_dir
 		self.marker_name = marker_name
+		self.buid_dir = build_dir
+		self.feedback_doc_name = feedback_doc_name
+		self.marking_sheet_name = marking_sheet_name
+		self.summary_out = summary_out
+
 		#load student feedback form as a template
 		self.feedback_document = Document(feedback_doc_name)
 		#load my marking sheet 'PT' from workbook
@@ -37,7 +55,7 @@ class BatchMark:
 		#username to firstname lastname map/dictionary
 		self.name_map = {}
 		self.construct_name_map()
-		with open('summary.csv', 'w') as self.summary:
+		with open(self.summary_out, 'w') as self.summary:
 			self.outputcsv_co(['Username', 'Name'])
 			self.outputcsv_co(automarktask1.Automark.getScoresStructure())
 			self.outputcsv_nl(automarktask1.Automark.getInternalStatsStructure())
@@ -82,9 +100,9 @@ class BatchMark:
 
 	def create_new_feedback_document(self):
 		print
-		marker_directory = os.path.dirname(os.path.realpath(__file__))+'/'+self.marker_name
-		for student_dir, _, file in os.walk(marker_directory):
-			student_dir_name = os.path.relpath(student_dir, marker_directory)
+		#marker_directory = os.path.dirname(os.path.realpath(__file__))+'/'+self.marker_name
+		for student_dir, _, file in os.walk(self.marking_dir):
+			student_dir_name = os.path.relpath(student_dir, self.marking_dir)
 
 			#print student_dir
 			if (student_dir_name is not '.') and (student_dir_name in self.name_map):
@@ -97,7 +115,7 @@ class BatchMark:
 					self.write_student_name_to_document(student_dir, student_dir_name, student_name)
 				else:
 					#print 'file: {}'.format(java_path)
-					marks = automarktask1.Automark(java_path, 'credentials.txt')
+					marks = automarktask1.Automark(java_path, 'credentials.txt', self.buid_dir)
 					self.write_details_to_document(student_dir, student_dir_name, student_name, marks)
 					self.write_comments_to_document(student_dir, student_dir_name, marks)
 					self.outputcsv_co([student_dir_name, student_name])
@@ -147,7 +165,8 @@ class BatchMark:
 		#print student_dir+'/'+filename
 
 	def write_comments_to_document(self, student_dir, student_dir_name, marks):
-		filename = self.feedback_doc_name.replace('username', student_dir_name)
+		filename = os.path.basename(self.feedback_doc_name).replace('username', student_dir_name)
+
 		feedback_document = Document(student_dir+'/../'+filename)
 		feedback_document.add_heading('Program Comments', 2)
 
@@ -207,14 +226,32 @@ class BatchMark:
 				username_index = self.marking_sheet.row_values(i).index('Username')
 				is_constructing_name_map = True
 
+# Task number
+# Folder containing students' folders
+# Marker's initials (optional)
+# Temp build folder (optional)
+# Feedback template (optional)
+# Student details list (optional)
+# Summary output (optional)
 
 start = time.time()
-parser = argparse.ArgumentParser(description='Housekeeping for 4001COMP marking.')
-parser.add_argument('task', metavar='TASK', type=str, help='Task number (e.g. 1)')
-parser.add_argument('initials', metavar='INITIALS', type=str, help='Marker initials (e.g. PH)')
-args = parser.parse_args()
+parser = argparse.ArgumentParser(description='Batch marker for 4001COMP Java programming.')
 
-hk = BatchMark('feedback_username_task' + args.task + '.docx','4001COMP Marking 2014-15 CW1-T' + args.task + '.xlsx',args.initials)
+# Required parameters
+parser.add_argument('task', metavar='TASK', type=str, help='Task number (e.g. 1)')
+parser.add_argument('workdir', metavar='WORK', type=str, help='Folder containing students\' folders (e.g. ./DLJ)')
+
+# Optional parameters
+parser.add_argument('-i', '--initials', metavar='INITIALS', type=str, help='Marker\'s initials (default Master)', default='Master')
+parser.add_argument('-b', '--builddir', metavar='BUILD', type=str, help='Folder to output build files to (default ./build)', default='./build')
+parser.add_argument('-t', '--template', metavar='TEMPLATE', type=str, help='Word feedback sheeet template (default ./feedback_username.docx)', default='./feedback_username.docx')
+parser.add_argument('-d', '--details', metavar='DETAILS', type=str, help='Excel student details list (default ./4001COMP Marking 2014-15.xlsx)', default='./4001COMP Marking 2014-15.xlsx')
+
+parser.add_argument('-s', '--summary', metavar='SUMMARY', type=str, help='Summary of marks as a CSV file (default ./summary.csv)', default='./summary.csv')
+
+# Apply these arguments
+args = parser.parse_args()
+hk = BatchMark(args.task, args.workdir, args.initials, args.builddir, args.template, args.details, args.summary)
 hk.go()
 
 end = time.time()

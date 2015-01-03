@@ -23,7 +23,7 @@ import comments
 import srctransform
 
 class Automark:
-	def __init__(self, filename, credentialsFile):
+	def __init__(self, filename, credentialsFile, build_dir):
 		# Read in the credentials from file
 		with open(credentialsFile) as file:
 			self.user = file.readline().rstrip('\n')
@@ -60,6 +60,7 @@ class Automark:
 		self.outputCheck = []
 		self.outputCheck.append(False)
 		self.outputCheck.append(False)
+		self.build_dir = build_dir
 
 		self.commentScore = self.checkCommentQuality()
 		self.variablesScore = self.checkVariableNameQuality()
@@ -250,7 +251,7 @@ class Automark:
 		#return executionScore
 		# Creating wsdl client
 		#wsdlObject = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
-		wsdlObject = execcode.ExecCode('build', self.classname)
+		wsdlObject = execcode.ExecCode(self.build_dir, self.classname)
 
 		# Check the available languages
 		#response = wsdlObject.getLanguages(self.user, self.password);
