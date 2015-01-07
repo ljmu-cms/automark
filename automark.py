@@ -127,7 +127,7 @@ class Automark:
 		# Execution input
 		# Execution result
 		# Execution output
-		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, self.programOutput.encode('ascii', 'replace')]
+		stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, Automark.clean_text(self.programOutput)]
 		return stats
 
 	def getOutputChecks(self):
@@ -168,7 +168,7 @@ class Automark:
 		return self.stdin
 
 	def getOutput(self):
-		return self.programOutput.encode('ascii', 'replace')
+		return Automark.clean_text(self.programOutput)
 		
 	def getExecutionComments(self):
 		return self.executionComments
@@ -186,6 +186,20 @@ class Automark:
 	def setupInputs(self):
 		stdin = ""
 		return [stdin]
+
+	# coding: utf-8
+	# from http://stackoverflow.com/questions/16469318/convert-raw-byte-string-to-unicode-without-knowing-the-codepage-beforehand/16469811#16469811
+	@staticmethod
+	def clean_text(s):
+		if isinstance(s, unicode): return s.encode('ascii', 'replace')
+
+		from locale import getpreferredencoding
+		try:
+			return unicode(s, getpreferredencoding()).encode('ascii', 'replace')
+		except UnicodeDecodeError:
+			pass
+		return unicode(s, getpreferredencoding(), "replace").encode('ascii', 'replace')
+
 
 	# Prints output and gives result
 	# True - Success; the output appears correct

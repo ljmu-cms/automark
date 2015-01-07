@@ -10,21 +10,43 @@ public class JOptionPane
 	public static final int ERROR_MESSAGE = 1;
 	public static final int PLAIN_MESSAGE = 2;
 	public static final int INFORMATION_MESSAGE = 3;
+	public static final int QUESTION_MESSAGE = 4;
 
-	public static void showMessageDialog(Object parent, String text, String title, int type) {
-		System.out.println(title + " : " + text);
+	public static void showMessageDialog(Object parent, String message) {
+		System.out.println(message);
 	}
 
-	public static void showMessageDialog(Object parent, String text, int type) {
-		System.out.println(text);
+	public static void showMessageDialog(Object parent, String message, String title, int type) {
+		System.out.println(title + " : " + message);
 	}
 
-	public static void showMessageDialog(Object parent, String text) {
-		System.out.println(text);
+	public static String showInputDialog(Object parent, String message) {
+		System.out.println(message);
+		return console.nextLine();
 	}
 
-	public static String showInputDialog(String text) {
-		System.out.println(text);
+	public static String showInputDialog(Object parent, String message, String initialSelection) {
+		System.out.println(message);
+		return console.nextLine();
+	}
+
+	public static String showInputDialog(Object parent, String message, String title, int type) {
+		System.out.println(title + " : " + message);
+		return console.nextLine();
+	}
+
+	public static String showInputDialog(String message) {
+		System.out.println(message);
+		return console.nextLine();
+	}
+
+	public static String showInputDialog(String message, int type) {
+		System.out.println(message);
+		return console.nextLine();
+	}
+
+	public static String showInputDialog(String message, String initialSelection) {
+		System.out.println(message);
 		return console.nextLine();
 	}
 }

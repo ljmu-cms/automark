@@ -18,6 +18,7 @@ import argparse
 import automark
 import automarktask1
 import automarktask2
+import automarktask3
 import time
 
 # Task number
@@ -47,7 +48,7 @@ class BatchMark:
 		self.summary_out = summary_out
 
 		# Select the appropriate task
-		tasks = [automark, automarktask1, automarktask2]
+		tasks = [automark, automarktask1, automarktask2, automarktask3]
 		if (self.task < len(tasks)) and (self.task >= 0):
 			self.taskSpecific = tasks[self.task]
 		else:

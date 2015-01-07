@@ -14,7 +14,8 @@ import re
 
 def checkVariableNameQuality(program, threshold):
 	findVars = VariableVisitor()
-	program.programTree.accept(findVars)
+	if program.programTree != None:
+		program.programTree.accept(findVars)
 	variableShort = 0
 	variableEnumeration = 0
 	

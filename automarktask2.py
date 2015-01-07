@@ -26,7 +26,8 @@ class Automark(automark.Automark):
 	def setupInputs(self):
 		# Establish the name of the input file
 		findFileInput = FileReaderVisitor()
-		self.programStructure.programTree.accept(findFileInput)
+		if self.programStructure.programTree != None:
+			self.programStructure.programTree.accept(findFileInput)
 
 		# Replace the input file with "input.txt" so we can control it
 		if len(findFileInput.filename) > 0:
