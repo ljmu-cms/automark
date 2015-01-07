@@ -20,6 +20,10 @@ public class JOptionPane
 		System.out.println(title + " : " + message);
 	}
 
+	public static void showMessageDialog(Object parent, String message, String title) {
+		System.out.println(title + " : " + message);
+	}
+
 	public static String showInputDialog(Object parent, String message) {
 		System.out.println(message);
 		return console.nextLine();
@@ -45,7 +49,7 @@ public class JOptionPane
 		return console.nextLine();
 	}
 
-	public static String showInputDialog(String message, String initialSelection) {
+	public static String showInputDialog(String message, Object initialValue) {
 		System.out.println(message);
 		return console.nextLine();
 	}

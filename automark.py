@@ -281,7 +281,7 @@ class Automark:
 				print 'Compilation error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, True)
 				compInfo = Automark.getValue(response, 'cmpinfo')
-				print 'Compilation output: ' + compInfo
+				#print 'Compilation output: ' + compInfo
 				self.programOutput = compInfo
 				self.executionComments = 'Program failed to compile.'
 			elif result == 12:
@@ -289,7 +289,7 @@ class Automark:
 				print 'Runtime error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
 				stdErrOutput = Automark.getValue(response, 'stderr')
-				print 'Runtime error: ' + stdErrOutput
+				#print 'Runtime error: ' + stdErrOutput
 				self.programOutput = stdErrOutput
 				self.executionComments = 'Runtime error occurred during execution.'
 			elif result == 13:

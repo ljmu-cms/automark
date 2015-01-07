@@ -42,7 +42,7 @@ class Automark(automark.Automark):
 			self.programStructure.programTree.accept(findFileOutput)
 
 		# Replace the output file with "output.txt" so we can control it
-		filename = findFileInput.getParamList()
+		filename = findFileOutput.getParamList()
 		if len(filename) > 0:
 			transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self.programStructure.program)
 			self.programStructure = self.programStructure._replace(program = transformed)
@@ -54,11 +54,13 @@ class Automark(automark.Automark):
 		inputContents = ''
 		numOfShips = random.randint(5,9)
 		shipIDs = []
+		journeyIDs = []
 		for ship in range(0, numOfShips):
-			shipID = random.choice(['Monarch', 'Princess', 'Empire', 'Crown', 'Bootle'])
+			shipID = u'XshipY{:d}Z'.format(random.randint(1000,9999))
 			shipIDs.append(shipID)
 			inputContents += '{}\n'.format(shipID)
-			journeyID = random.choice(string.ascii_letters) + str(random.randint(10, 999))
+			journeyID = u'XjourneyY{:d}Z'.format(random.randint(1000, 9999))
+			journeyIDs.append(journeyID)
 			inputContents += '{}\n'.format(journeyID)
 			journeyLength = random.randint(4, 30)
 			inputContents += '{:d}\n'.format(journeyLength)
@@ -67,7 +69,7 @@ class Automark(automark.Automark):
 			journeyCost = 0
 			for crewMember in range(0, crewNum):
 				rate = random.randint(100, 500) / 10.0
-				inputContents += '{:f}\n'.format(rate)
+				inputContents += '{:.1f}\n'.format(rate)
 				journeyCost += rate * journeyLength
 			inputContents += '\n'
 			journeyCosts.append(journeyCost)
@@ -84,25 +86,144 @@ class Automark(automark.Automark):
 
 		stdin = '{:d}\n'.format(recommendedMax)
 
-		return [stdin, numOfShips, shipIDs, journeyCosts, recommendedMax]
+		return [stdin, numOfShips, shipIDs, journeyIDs, journeyCosts, recommendedMax]
 
+	@staticmethod
+	def check_legal(line):
+		legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 'lower', 'acceptable']
+		illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
+
+		found_legal = False
+		legal_result = False
+
+		found = Automark.find_keywords(line, legal_words)
+		if found:
+			legal_result = True
+			found_legal = True
+
+		found = Automark.find_keywords(line, illegal_words)
+		if found:
+			legal_result = False
+			found_legal = True
+
+		return [found_legal, legal_result]
 
 	@staticmethod
 	def find_keywords(line, words):
 		found = False
 		for keyword in words:
-			if re.search(re.escape(keyword), line) != None:
+			if re.search(re.escape(keyword), line, re.IGNORECASE) != None:
 				found = True
 		return found
 
 	def checkOutputCorrectness(self, output, inputs):
 		numOfShips = inputs[1]
-		shipISs = inputs[2]
-		journeyCostss = inputs[3]
-		recommendedMax = inputs[4]
+		shipIDs = inputs[2]
+		journeyIDs = inputs[3]
+		journeyCosts = inputs[4]
+		recommendedMax = inputs[5]
 
 		outputCheck = [False, False, False, False, False]
 		outputScore = 0
+
+		# Search for ship names and ensure they're in the right order
+		shipIDsOutput_dup = re.findall(r'XshipY\d\d\d\dZ', output)
+		# Remove duplicates but retain ordering
+		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+		seen = set()
+		seen_add = seen.add
+		shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
+
+		# Search for journey names and ensure they're in the right order
+		journeyIDsOutput_dup = re.findall(r'XjourneyY\d\d\d\dZ', output)
+		# Remove duplicates but retain ordering
+		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+		seen = set()
+		seen_add = seen.add
+		journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
+
+
+		#print shipIDsOutput
+		#print shipIDs
+		#print journeyIDsOutput
+		#print journeyIDs
+
+		if len(shipIDsOutput) >= len(shipIDs):
+			shipsMatch = True
+			for shipID in range(0, len(shipIDs)):
+				if shipIDsOutput[shipID] != shipIDs[shipID]:
+					shipsMatch = False
+		else:
+			shipsMatch = False
+
+		if len(journeyIDsOutput) >= len(journeyIDs):
+			journeysMatch = True
+			for journeyID in range(0, len(journeyIDs)):
+				if journeyIDsOutput[journeyID] != journeyIDs[journeyID]:
+					journeysMatch = False
+		else:
+			journeysMatch = False
+
+		if journeysMatch:
+			print 'Journeys match'
+			sections = journeyIDs
+
+		if shipsMatch:
+			print 'Ships Match'
+			sections = shipIDs
+			
+		# Check the journey cost and viability
+		correctCostCount = 0
+		correctLegalityCount = 0
+		outputLines = output.splitlines()
+		if shipsMatch or journeysMatch:
+			sections.append(u'XjourneyY0Z')
+			section = 0
+			current = sections[section]
+			next = sections[section + 1]
+			costFound = False
+			legalFound = False
+			for line in outputLines:
+				if re.search(next, line):
+					if costFound:
+						correctCostCount += 1
+					if legalFound:
+						correctLegalityCount += 1
+					section += 1
+					current = next
+					next = sections[section + 1]
+				if re.search(str(journeyCosts[section]), line):
+					costFound = True
+				legal = Automark.check_legal(line)
+				if legal[0] and (legal[1] == (journeyCosts[section] <= recommendedMax)):
+					legalFound = True;
+
+			if costFound:
+				correctCostCount += 1
+			if legalFound:
+				correctLegalityCount += 1
+
+		if correctCostCount == numOfShips:
+			print 'All costs matched'
+		else:
+			print 'Costs matched {:d} out of {:d}'.format(correctCostCount, numOfShips)
+
+		if correctLegalityCount == numOfShips:
+			print 'All legalities matched'
+		else:
+			print 'Legalities matched {:d} out of {:d}'.format(correctLegalityCount, numOfShips)
+
+
+		#print '************************* STDOUT *************************'
+		#print Automark.clean_text(output)
+
+		#print '*************************  FILE  *************************'
+		fileToRead = os.path.join(self.build_dir, "output.txt")
+		with open(fileToRead) as outputFile:
+			fileOutput = outputFile.read()
+		#print Automark.clean_text(fileOutput)
+
+
 
 		output = re.sub("\n\s*\n*", "\n", output)
 		lines = output.splitlines()
