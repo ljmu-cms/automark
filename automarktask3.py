@@ -19,7 +19,7 @@ import math
 import string
 
 class Automark(automark.Automark):
-	outputChecks = 5
+	outputChecks = 6
 
 	def __init__(self, filename, credentialsFile, build_dir):
 		automark.Automark.__init__(self, filename, credentialsFile, build_dir)
@@ -149,7 +149,8 @@ class Automark(automark.Automark):
 		journeyCosts = inputs[4]
 		recommendedMax = inputs[5]
 
-		outputCheck = [False, False, False, False, False]
+		executionComments = ''
+		outputCheck = [False, False, False, False, False, False]
 		outputScore = 0
 
 		# Search for ship names and ensure they're in the right order
@@ -174,6 +175,8 @@ class Automark(automark.Automark):
 		#print journeyIDsOutput
 		#print journeyIDs
 
+
+
 		if len(shipIDsOutput) >= len(shipIDs):
 			shipsMatch = True
 			for shipID in range(0, len(shipIDs)):
@@ -191,21 +194,24 @@ class Automark(automark.Automark):
 			journeysMatch = False
 
 		if journeysMatch:
-			print 'Journeys match'
 			sections = list(journeyIDs)
 
 		if shipsMatch:
-			print 'Ships Match'
 			sections = list(shipIDs)
+
+		consoleShipsMatch = shipsMatch or journeysMatch
+
+		if consoleShipsMatch:
+			executionComments += 'You\'ve correctly output all the ship journeys to the console.\n'
+		else:
+			executionComments += 'You didn\'t output all of the journeys correctly to the console.\n'
 
 		correctCostCount = 0
 		correctLegalityCount = 0
-		if shipsMatch or journeysMatch:
-			correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCosts)
-
+		outputLines = output.splitlines()
+		if consoleShipsMatch:
 			# Check the journey cost and viability
-			outputLines = output.splitlines()
-
+			correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCosts)
 			sections.append('defenestrate')
 			section = 0
 			current = sections[section]
@@ -226,16 +232,46 @@ class Automark(automark.Automark):
 				correctLegalityCount += 1
 
 		if correctCostCount == numOfShips:
-			print 'All costs matched'
+			executionComments += 'You correctly calculated and output all of the journey costs to the console.\n'
 		else:
-			print 'Costs matched {:d} out of {:d}'.format(correctCostCount, numOfShips)
+			executionComments += 'Not all of the costs were correctly calculated and output to the console ({:d} out of {:d})\n'.format(correctCostCount, numOfShips)
 
 		if correctLegalityCount == numOfShips:
-			print 'All legalities matched'
+			executionComments += 'You correctly determined whether each of the ships was within cost.\n'
 		else:
-			print 'Legalities matched {:d} out of {:d}'.format(correctLegalityCount, numOfShips)
+			executionComments += 'You only determined whether the ships were within cosst correctly for {:d} out of the {:d} ships.\n'.format(correctLegalityCount, numOfShips)
 
+		#Establish the list of viable journeys
+		viableShipIDs = [j for i, j in enumerate(shipIDs) if journeyCosts[i] <= recommendedMax]
+		viableJourneyIDs = [j for i, j in enumerate(journeyIDs) if journeyCosts[i] <= recommendedMax]
+		viableJourneyCosts = [i for i in journeyCosts if i <= recommendedMax]
+		viableShipNum = len(viableShipIDs)
 
+		# Find the highest cost lower than the maxumum recommended
+		highestIndex = max(enumerate(viableJourneyCosts), key= lambda x: x[1])[0]
+		highestShipID = viableShipIDs[highestIndex]
+		highestJourneyID = viableJourneyIDs[highestIndex]
+		highestJourneyCost = viableJourneyCosts[highestIndex]
+
+		# Find whether the hightest cost below the maximum has been correctly calculated
+		maxStart = len(outputLines) - 1
+		maxFound = False
+		while (not maxFound) and (maxStart >= 0):
+			if Automark.find_keywords(outputLines[maxStart - 1], ['highest', 'expensive', 'maximum']):
+				maxFound = True
+			maxStart -= 1
+
+		if maxFound:
+			maxFound = False
+			for line in outputLines[maxStart:]:
+				maxFound |= Automark.find_keywords(line, [highestShipID, highestJourneyID, '{:.0f}'.format(highestJourneyCost)])
+
+		executionComments += 'The maximum recommended journey cost entered by the user was {:d}.\n'.format(recommendedMax)
+		executionComments += 'The most expensive journey within this cost was {} costing {:.1f}.\n'.format(highestShipID, highestJourneyCost)
+		if maxFound:
+			executionComments += 'Your program correctly determined this maximum journey.\n'
+		else:
+			executionComments += 'Your program didn\'t correctly determine and output this.\n'
 
 
 		#print '************************* STDOUT *************************'
@@ -247,11 +283,6 @@ class Automark(automark.Automark):
 			fileOutput = outputFile.read()
 		fileOutput = Automark.clean_text(fileOutput)
 		#print fileOutput
-
-		#Establish the list of viable journeys
-		viableShipIDs = [j for i, j in enumerate(shipIDs) if journeyCosts[i] <= recommendedMax]
-		viableJourneyIDs = [j for i, j in enumerate(journeyIDs) if journeyCosts[i] <= recommendedMax]
-		viableJourneyCosts = [i for i in journeyCosts if i <= recommendedMax]
 
 		# Search for ship names and ensure they're in the right order
 		shipIDsOutput_dup = re.findall(r'XshipY\d\d\d\dZ', fileOutput)
@@ -279,29 +310,48 @@ class Automark(automark.Automark):
 			viableJourneysMatch = True
 
 		if viableJourneysMatch:
-			print 'Viable journeys match'
 			sections = list(viableJourneyIDs)
 
 		if viableShipsMatch:
-			print 'Viable ships Match'
 			sections = list(viableShipIDs)
 
+		fileShipsMatch = viableShipsMatch or viableJourneysMatch
+
+		if fileShipsMatch:
+			executionComments += 'Your program correctly listed the ships within cost in your output file.\n'
+		else:
+			executionComments += 'Your program didn\'t correctly list the ships within cost in your output file.\n'
+
 		viableCorrectCostCount = 0
-		if viableShipsMatch or viableJourneysMatch:
+		if fileShipsMatch:
 			viableCorrectCostCount = Automark.checkExistenceInSections(output, sections, viableJourneyCosts)
 
-		if viableCorrectCostCount == len(viableJourneyCosts):
-			print 'All viable costs matched'
+		if viableCorrectCostCount == viableShipNum:
+			executionComments += 'Your program correctly output the costs for these ships.\n'
 		else:
-			print 'Viable costs matched {:d} out of {:d}'.format(viableCorrectCostCount, len(viableJourneyCosts))
+			executionComments += 'Your program only correctly output the costs for {:d} out of {:d} of these ships.\n'.format(viableCorrectCostCount, len(viableJourneyCosts))
 
+		outputScore = 0
 
+		if consoleShipsMatch:
+			outputScore += 1
 
+		if correctCostCount == numOfShips:
+			outputScore += 1
 
-		output = re.sub("\n\s*\n*", "\n", output)
-		lines = output.splitlines()
-	
-		executionComments = ''
+		if correctLegalityCount == numOfShips:
+			outputScore += 1
+
+		if maxFound:
+			outputScore += 1
+
+		if fileShipsMatch:
+			outputScore += 1
+
+		if viableCorrectCostCount == viableShipNum:
+			outputScore += 1
+
+		outputCheck = [consoleShipsMatch, (correctCostCount == numOfShips), (correctLegalityCount == numOfShips), maxFound, fileShipsMatch, (viableCorrectCostCount == viableShipNum)]
 
 		return [outputScore, executionComments, outputCheck]
 
