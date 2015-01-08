@@ -116,6 +116,32 @@ class Automark(automark.Automark):
 				found = True
 		return found
 
+	@staticmethod
+	def checkExistenceInSections(output, sections, checkList):
+		# Check the journey cost and viability
+		correctCount = 0
+		outputLines = output.splitlines()
+
+		sections.append('defenestrate')
+		section = 0
+		current = sections[section]
+		next = sections[section + 1]
+		found = False
+		for line in outputLines:
+			if re.search(next, line):
+				if found:
+					correctCount += 1
+				section += 1
+				current = next
+				next = sections[section + 1]
+			if re.search(str(checkList[section]), line):
+				found = True
+
+		if found:
+			correctCount += 1
+
+		return correctCount
+	
 	def checkOutputCorrectness(self, output, inputs):
 		numOfShips = inputs[1]
 		shipIDs = inputs[2]
@@ -166,40 +192,36 @@ class Automark(automark.Automark):
 
 		if journeysMatch:
 			print 'Journeys match'
-			sections = journeyIDs
+			sections = list(journeyIDs)
 
 		if shipsMatch:
 			print 'Ships Match'
-			sections = shipIDs
-			
-		# Check the journey cost and viability
+			sections = list(shipIDs)
+
 		correctCostCount = 0
 		correctLegalityCount = 0
-		outputLines = output.splitlines()
 		if shipsMatch or journeysMatch:
-			sections.append(u'XjourneyY0Z')
+			correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCosts)
+
+			# Check the journey cost and viability
+			outputLines = output.splitlines()
+
+			sections.append('defenestrate')
 			section = 0
 			current = sections[section]
 			next = sections[section + 1]
-			costFound = False
 			legalFound = False
 			for line in outputLines:
 				if re.search(next, line):
-					if costFound:
-						correctCostCount += 1
 					if legalFound:
 						correctLegalityCount += 1
 					section += 1
 					current = next
 					next = sections[section + 1]
-				if re.search(str(journeyCosts[section]), line):
-					costFound = True
 				legal = Automark.check_legal(line)
 				if legal[0] and (legal[1] == (journeyCosts[section] <= recommendedMax)):
 					legalFound = True;
 
-			if costFound:
-				correctCostCount += 1
 			if legalFound:
 				correctLegalityCount += 1
 
@@ -214,6 +236,8 @@ class Automark(automark.Automark):
 			print 'Legalities matched {:d} out of {:d}'.format(correctLegalityCount, numOfShips)
 
 
+
+
 		#print '************************* STDOUT *************************'
 		#print Automark.clean_text(output)
 
@@ -221,7 +245,56 @@ class Automark(automark.Automark):
 		fileToRead = os.path.join(self.build_dir, "output.txt")
 		with open(fileToRead) as outputFile:
 			fileOutput = outputFile.read()
-		#print Automark.clean_text(fileOutput)
+		fileOutput = Automark.clean_text(fileOutput)
+		#print fileOutput
+
+		#Establish the list of viable journeys
+		viableShipIDs = [j for i, j in enumerate(shipIDs) if journeyCosts[i] <= recommendedMax]
+		viableJourneyIDs = [j for i, j in enumerate(journeyIDs) if journeyCosts[i] <= recommendedMax]
+		viableJourneyCosts = [i for i in journeyCosts if i <= recommendedMax]
+
+		# Search for ship names and ensure they're in the right order
+		shipIDsOutput_dup = re.findall(r'XshipY\d\d\d\dZ', fileOutput)
+		# Remove duplicates but retain ordering
+		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+		seen = set()
+		seen_add = seen.add
+		shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
+
+		# Search for journey names and ensure they're in the right order
+		journeyIDsOutput_dup = re.findall(r'XjourneyY\d\d\d\dZ', fileOutput)
+		# Remove duplicates but retain ordering
+		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+		seen = set()
+		seen_add = seen.add
+		journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
+
+
+		viableShipsMatch = False
+		if viableShipIDs == shipIDsOutput:
+			viableShipsMatch = True
+
+		viableJourneysMatch = False
+		if viableJourneyIDs == journeyIDsOutput:
+			viableJourneysMatch = True
+
+		if viableJourneysMatch:
+			print 'Viable journeys match'
+			sections = list(viableJourneyIDs)
+
+		if viableShipsMatch:
+			print 'Viable ships Match'
+			sections = list(viableShipIDs)
+
+		viableCorrectCostCount = 0
+		if viableShipsMatch or viableJourneysMatch:
+			viableCorrectCostCount = Automark.checkExistenceInSections(output, sections, viableJourneyCosts)
+
+		if viableCorrectCostCount == len(viableJourneyCosts):
+			print 'All viable costs matched'
+		else:
+			print 'Viable costs matched {:d} out of {:d}'.format(viableCorrectCostCount, len(viableJourneyCosts))
+
 
 
 
