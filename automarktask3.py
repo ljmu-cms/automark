@@ -211,7 +211,8 @@ class Automark(automark.Automark):
 		outputLines = output.splitlines()
 		if consoleShipsMatch:
 			# Check the journey cost and viability
-			correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCosts)
+			journeyCostsInt = [int(x) for x in journeyCosts]
+			correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCostsInt)
 			sections.append('defenestrate')
 			section = 0
 			current = sections[section]
@@ -324,7 +325,8 @@ class Automark(automark.Automark):
 
 		viableCorrectCostCount = 0
 		if fileShipsMatch:
-			viableCorrectCostCount = Automark.checkExistenceInSections(output, sections, viableJourneyCosts)
+			viableJourneyCostsInt = [int(x) for x in viableJourneyCosts]
+			viableCorrectCostCount = Automark.checkExistenceInSections(output, sections, viableJourneyCostsInt)
 
 		if viableCorrectCostCount == viableShipNum:
 			executionComments += 'Your program correctly output the costs for these ships.\n'
@@ -334,10 +336,10 @@ class Automark(automark.Automark):
 		outputScore = 0
 
 		if consoleShipsMatch:
-			outputScore += 1
+			outputScore += 0.5
 
 		if correctCostCount == numOfShips:
-			outputScore += 1
+			outputScore += 0.5
 
 		if correctLegalityCount == numOfShips:
 			outputScore += 1
@@ -346,10 +348,10 @@ class Automark(automark.Automark):
 			outputScore += 1
 
 		if fileShipsMatch:
-			outputScore += 1
+			outputScore += 0.5
 
 		if viableCorrectCostCount == viableShipNum:
-			outputScore += 1
+			outputScore += 0.5
 
 		outputCheck = [consoleShipsMatch, (correctCostCount == numOfShips), (correctLegalityCount == numOfShips), maxFound, fileShipsMatch, (viableCorrectCostCount == viableShipNum)]
 

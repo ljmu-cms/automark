@@ -69,7 +69,7 @@ class Automark:
 		self.indentationScore = self.checkIndentation()
 		self.executionScore = self.checkExecution()
 		
-		print 'Final score: {:d}\n'.format(self.getTotalScore())
+		print 'Final score: {:g}\n'.format(self.getTotalScore())
 
 	def getFullProgram(self):
 		return self.programStructure.fullProgram

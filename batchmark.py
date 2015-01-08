@@ -156,15 +156,17 @@ class BatchMark:
 		commentScore = marks.getCommentScore()
 		totalScore = marks.getTotalScore()
 		efficientScore = 0
-		if executionScore > 5:
+		if executionScore > 4:
 			efficientScore = 1
 			executionScore -= 1
-		self.feedback_document.tables[2].cell((2 + executionScore), 2).text = str(executionScore)
+		self.feedback_document.tables[2].cell((2 + int(executionScore)), 2).text = '{:g}'.format(executionScore)
 		self.feedback_document.tables[2].cell(9, 2).text = str(indentationScore)
 		self.feedback_document.tables[2].cell(10, 2).text = str(variablesScore)
 		self.feedback_document.tables[2].cell(11, 2).text = str(efficientScore)
-		self.feedback_document.tables[2].cell(13 + commentScore, 2).text = str(commentScore)
-		self.feedback_document.tables[2].cell(16, 2).text = str(totalScore)
+		self.feedback_document.tables[2].cell(13 + int(commentScore), 2).text = str(commentScore)
+
+
+		self.feedback_document.tables[2].cell(16, 2).text = '{:g}'.format(totalScore)
 		self.feedback_document.save(student_dir+'/../'+filename)
 
 	def write_student_name_to_document(self, student_dir, student_dir_name, student_name):
