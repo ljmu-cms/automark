@@ -63,6 +63,8 @@ class Automark:
 		self.outputCheck.append(False)
 		self.outputCheck.append(False)
 		self.build_dir = build_dir
+		self.extraProgramInput = []
+		self.extraProgramOutput = []
 
 		self.commentScore = self.checkCommentQuality()
 		self.variablesScore = self.checkVariableNameQuality()
@@ -89,6 +91,12 @@ class Automark:
 
 	def getExecutionScore(self):
 		return self.executionScore
+
+	def getExtraProgrammInputs(self):
+		return self.extraProgramInput
+
+	def getExtraProgrammOutputs(self):
+		return self.extraProgramOutput
 
 	@staticmethod
 	def getScoresStructure():

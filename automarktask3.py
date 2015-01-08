@@ -56,10 +56,10 @@ class Automark(automark.Automark):
 		shipIDs = []
 		journeyIDs = []
 		for ship in range(0, numOfShips):
-			shipID = u'XshipY{:d}Z'.format(random.randint(1000,9999))
+			shipID = u'Boat{:d}ID'.format(random.randint(1000,9999))
 			shipIDs.append(shipID)
 			inputContents += '{}\n'.format(shipID)
-			journeyID = u'XjourneyY{:d}Z'.format(random.randint(1000, 9999))
+			journeyID = u'Journey{:d}ID'.format(random.randint(1000, 9999))
 			journeyIDs.append(journeyID)
 			inputContents += '{}\n'.format(journeyID)
 			journeyLength = random.randint(4, 30)
@@ -68,7 +68,7 @@ class Automark(automark.Automark):
 			inputContents += '{:d}\n'.format(crewNum)
 			journeyCost = 0
 			for crewMember in range(0, crewNum):
-				rate = random.randint(100, 500) / 10.0
+				rate = random.randint(20, 100) / 2.0
 				inputContents += '{:.1f}\n'.format(rate)
 				journeyCost += rate * journeyLength
 			inputContents += '\n'
@@ -85,6 +85,8 @@ class Automark(automark.Automark):
 			inputFile.write(inputContents)
 
 		stdin = '{:d}\n'.format(recommendedMax)
+
+		self.extraProgramInput.append(['Input from input.txt', inputContents])
 
 		return [stdin, numOfShips, shipIDs, journeyIDs, journeyCosts, recommendedMax]
 
@@ -154,7 +156,7 @@ class Automark(automark.Automark):
 		outputScore = 0
 
 		# Search for ship names and ensure they're in the right order
-		shipIDsOutput_dup = re.findall(r'XshipY\d\d\d\dZ', output)
+		shipIDsOutput_dup = re.findall(r'Boat\d\d\d\dID', output)
 		# Remove duplicates but retain ordering
 		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 		seen = set()
@@ -162,7 +164,7 @@ class Automark(automark.Automark):
 		shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
 
 		# Search for journey names and ensure they're in the right order
-		journeyIDsOutput_dup = re.findall(r'XjourneyY\d\d\d\dZ', output)
+		journeyIDsOutput_dup = re.findall(r'Journey\d\d\d\dID', output)
 		# Remove duplicates but retain ordering
 		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 		seen = set()
@@ -286,7 +288,7 @@ class Automark(automark.Automark):
 		#print fileOutput
 
 		# Search for ship names and ensure they're in the right order
-		shipIDsOutput_dup = re.findall(r'XshipY\d\d\d\dZ', fileOutput)
+		shipIDsOutput_dup = re.findall(r'Boat\d\d\d\dID', fileOutput)
 		# Remove duplicates but retain ordering
 		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 		seen = set()
@@ -294,7 +296,7 @@ class Automark(automark.Automark):
 		shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
 
 		# Search for journey names and ensure they're in the right order
-		journeyIDsOutput_dup = re.findall(r'XjourneyY\d\d\d\dZ', fileOutput)
+		journeyIDsOutput_dup = re.findall(r'Journey\d\d\d\dID', fileOutput)
 		# Remove duplicates but retain ordering
 		# From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
 		seen = set()
@@ -352,6 +354,8 @@ class Automark(automark.Automark):
 
 		if viableCorrectCostCount == viableShipNum:
 			outputScore += 0.5
+
+		self.extraProgramOutput.append(['Output to wagedaily.txt', fileOutput])
 
 		outputCheck = [consoleShipsMatch, (correctCostCount == numOfShips), (correctLegalityCount == numOfShips), maxFound, fileShipsMatch, (viableCorrectCostCount == viableShipNum)]
 

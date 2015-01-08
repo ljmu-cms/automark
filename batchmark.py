@@ -190,11 +190,25 @@ class BatchMark:
 		for line in inputs:
 			feedback_document.add_paragraph(line, style='CodeChunk')
 
+		extraProgramInputs = marks.getExtraProgrammInputs()
+		for extra in extraProgramInputs:
+			feedback_document.add_heading(extra[0], 3)
+			extraLines = extra[1].splitlines()
+			for line in extraLines:
+				feedback_document.add_paragraph(line, style='CodeChunk')
+	
 		feedback_document.add_heading('Program output', 3)
 
 		output = marks.getOutput().splitlines()
 		for line in output:
 			feedback_document.add_paragraph(line, style='CodeChunk')
+
+		extraProgramOutputs = marks.getExtraProgrammOutputs()
+		for extra in extraProgramOutputs:
+			feedback_document.add_heading(extra[0], 3)
+			extraLines = extra[1].splitlines()
+			for line in extraLines:
+				feedback_document.add_paragraph(line, style='CodeChunk')
 
 		feedback_document.add_heading('Execution comments', 3)
 
