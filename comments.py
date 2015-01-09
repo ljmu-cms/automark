@@ -21,7 +21,7 @@ def lineFromCharacterNoSpace(program, charPos):
 def lineFromCharacter(program, charPos):
 	return program.lineNumber[lineFromCharacterNoSpace(program, charPos) - 1]
 
-def checkCommentQuality(program, frequencyThreshold, consistencyThreshold):
+def checkCommentQuality(program, frequencyThreshold, consistencyThreshold, aveOffset, sdOffset, aveWeight):
 	# Regex expressions search for block comments or full-line comments.
 	# Multiple full-line comments without other text are considered as a single match
 	blockComments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', program.program, (re.MULTILINE | re.DOTALL)))
@@ -50,8 +50,8 @@ def checkCommentQuality(program, frequencyThreshold, consistencyThreshold):
 		
 		lastCommentLine = lineFromCharacter(program, blockComments[commentCount - 1].end())
 
-	commentFrequency = max(1.0 - ((max(commentGapAverage - 5.0, 0.0))/2.0), 0.0)
-	commentConsistency = max(1.0 - ((max(commentGapSD - 2.0, 0.0))/1.0), 0.0)
+	commentFrequency = max(1.0 - ((max(commentGapAverage - aveOffset, 0.0)) * aveWeight), 0.0)
+	commentConsistency = max(1.0 - ((max(commentGapSD - sdOffset, 0.0)) * 1.0), 0.0)
 	commentScore = int(round(commentFrequency + commentConsistency))
 
 	if commentFrequency < frequencyThreshold:

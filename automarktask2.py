@@ -177,6 +177,15 @@ class Automark(automark.Automark):
 
 		return [outputScore, executionComments, outputCheck]
 
+	def checkCommentQuality(self):
+		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 7.8, 7.8, 0.5)
+		commentScore = result[0]
+		self.commentGapAverage = result[1]
+		self.commentGapSD = result[2]
+		self.errorList.extend(result[3])
+		return commentScore
+
+
 class FileReaderVisitor(model.Visitor):
 	def __init__(self, verbose=False):
 		super(FileReaderVisitor, self).__init__()

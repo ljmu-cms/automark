@@ -222,7 +222,7 @@ class Automark:
 		return [outputScore, executionComments, outputCheck]
 
 	def checkCommentQuality(self):
-		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75)
+		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 5.0, 2.0, 0.5)
 		commentScore = result[0]
 		self.commentGapAverage = result[1]
 		self.commentGapSD = result[2]
