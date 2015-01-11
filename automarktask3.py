@@ -361,6 +361,22 @@ class Automark(automark.Automark):
 
 		return [outputScore, executionComments, outputCheck]
 
+	def checkIndentation(self):
+		result = indentation.checkIndentation(self.programStructure, 7, 23)
+		self.indentationErrors = result[0]
+		indentationScore = result[1]
+		self.errorList.extend(result[2])
+		return indentationScore
+
+	def checkCommentQuality(self):
+		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 1.0, 4.0, 0.06)
+		commentScore = result[0]
+		self.commentGapAverage = result[1]
+		self.commentGapSD = result[2]
+		self.errorList.extend(result[3])
+		return commentScore
+
+
 class InstanceCreationParamVisitor(model.Visitor):
 	def __init__(self, className, paramNum=0, verbose=False):
 		super(InstanceCreationParamVisitor, self).__init__()

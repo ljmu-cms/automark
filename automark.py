@@ -238,7 +238,7 @@ class Automark:
 		return variablesScore
 
 	def checkIndentation(self):
-		result = indentation.checkIndentation(self.programStructure, 3)
+		result = indentation.checkIndentation(self.programStructure, 3, 3)
 		self.indentationErrors = result[0]
 		indentationScore = result[1]
 		self.errorList.extend(result[2])
@@ -322,6 +322,7 @@ class Automark:
 				print 'Memory used: {} bytes'.format(self.memoryUsed)
 				self.executionComments = 'Execution failed to complete (ran out of memory).'
 			elif result == 19:
+				executionScore += 1
 				print 'Illegal system call'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
 				stdErrOutput = Automark.getValue(response, 'stderr')

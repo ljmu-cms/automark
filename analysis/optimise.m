@@ -12,7 +12,7 @@
 # indent_orig - The original human-assigned scores for the indentation
 # indent_error - The number of indentation errors
 
-
+%{
 # Optimise the indentation score parameters
 figure;
 title('Indentation score similarity');
@@ -34,4 +34,21 @@ comment_results = threedee(@(x, y, z)comments(comment_orig, comment_ave, comment
 disp('[value, average-limit, sd-limit, average-weight]')
 minimum = minthreedee(comment_results);
 minimum = [minimum(1), scale(0, 20, 1, minimum(2)), scale(0, 20, 1, minimum(3)), scale(0.0, 0.1, 0.01, minimum(4))];
+disp(minimum);
+%}
+
+%{
+# Optimise the execution process
+disp('Mimumum execution score similarity')
+execute_results = threedee(@(x, y, z)execute(execute_orig, execute_compiled, execute_check1, execute_check2, x, y, z), 0, 5, 0.4, 0, 5, 0.4, 0, 5, 0.4);
+disp('[value, comile-weight, check0-weight, check1-weight]')
+minimum = minthreedee(execute_results);
+minimum = [minimum(1), scale(0, 5, 0.4, minimum(2)), scale(0, 5, 0.4, minimum(3)), scale(0, 5, 0.4, minimum(4))];
+disp(minimum);
+%}
+
+disp('Mimumum execution score similarity')
+dimensions = size(checks)(1)
+minimum = mindeeuniform(@(x)execute(orig, checks, x), dimensions, 0.0, 2.0, 0.1);
+disp('[value, compile-weight, check0-weight, check1-weight, ...]')
 disp(minimum);

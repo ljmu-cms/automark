@@ -177,8 +177,15 @@ class Automark(automark.Automark):
 
 		return [outputScore, executionComments, outputCheck]
 
+	def checkIndentation(self):
+		result = indentation.checkIndentation(self.programStructure, 1, 14)
+		self.indentationErrors = result[0]
+		indentationScore = result[1]
+		self.errorList.extend(result[2])
+		return indentationScore
+
 	def checkCommentQuality(self):
-		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 7.8, 7.8, 0.5)
+		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 2.0, 6.0, 0.08)
 		commentScore = result[0]
 		self.commentGapAverage = result[1]
 		self.commentGapSD = result[2]

@@ -20,6 +20,7 @@ import automarktask1
 import automarktask2
 import automarktask3
 import time
+from zipfile import ZipFile
 
 # Task number
 # Folder containing students' folders
@@ -75,12 +76,21 @@ class BatchMark:
 	#probably won't work for Windows
 	def unzip_submission(self, student_dir):
 		#form unzip command
-		cmd = ['unzip', '-q', '-o', '-d', student_dir + '/', student_dir + '/*.zip']
-		#print cmd, '\n\n'
-		sys_process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		std_out = sys_process.communicate()
-		#std_out = sys_process.stdout.read().strip()
-		#print std_out
+		#cmd = ['unzip', '-q', '-o', '-d', student_dir + '/', student_dir + '/*.zip']
+		#sys_process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#std_out = sys_process.communicate()
+		archive_file = ''
+		for check_dir, _, file in os.walk(student_dir):
+			if '__MACOSX' not in check_dir.split('/'):
+				for file_name in file:
+					if file_name.endswith('.zip'):
+						archive_file = os.path.join(check_dir, file_name)
+		if archive_file != '':
+			with ZipFile(archive_file ,'r') as archive:
+				archive.extractall(student_dir)
+				archive.close()
+		else:
+			print ('No zip archive')
 
 	def outputcsv(self, items):
 		count = 0
