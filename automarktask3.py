@@ -341,22 +341,22 @@ class Automark(automark.Automark):
 		outputScore = 0
 
 		if consoleShipsMatch:
-			outputScore += 0.5
+			outputScore += 0.1
 
 		if correctCostCount == numOfShips:
-			outputScore += 0.5
+			outputScore += 0.2
 
 		if correctLegalityCount == numOfShips:
-			outputScore += 1
+			outputScore += 1.2
 
 		if maxFound:
-			outputScore += 1
+			outputScore += 1.5
 
 		if fileShipsMatch:
-			outputScore += 0.5
+			outputScore += 0.1
 
 		if viableCorrectCostCount == viableShipNum:
-			outputScore += 0.5
+			outputScore += 0.1
 
 		self.extraProgramOutput.append(['Output to wagedaily.txt', fileOutput])
 
@@ -367,7 +367,7 @@ class Automark(automark.Automark):
 	def checkExecuteResult(self, result):
 		outputScore = 0
 		if execcode.ExecCode.responseCheckCompiled(result):
-			outputScore += 1
+			outputScore += 1.5
 		return outputScore
 
 	def checkIndentation(self):
