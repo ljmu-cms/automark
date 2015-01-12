@@ -48,7 +48,7 @@ disp(minimum);
 %}
 
 disp('Mimumum execution score similarity')
-dimensions = size(checks)(1)
-minimum = mindeeuniform(@(x)execute(orig, checks, x), dimensions, 0.0, 2.0, 0.1);
+dimensions = size(execute_checks)(1)
+minimum = mindeeuniform(@(x)execute(execute_orig, execute_checks, x), dimensions, 0.0, 1.5, 0.1);
 disp('[value, compile-weight, check0-weight, check1-weight, ...]')
 disp(minimum);

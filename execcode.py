@@ -156,6 +156,13 @@ class ExecCode:
 		return None
 
 	@staticmethod
+	def responseCheckCompiled(response):
+		compiled = False
+		if response >= 12:
+			compiled = True
+		return compiled
+
+	@staticmethod
 	def tidyup(tempfolder):
 		for file in os.listdir(tempfolder):
 			extension = os.path.splitext(file)[1]

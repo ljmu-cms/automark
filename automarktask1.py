@@ -13,6 +13,9 @@ This script allows a program to be checked using the ideone api.
 import automark
 import random
 import re
+import comments
+import indentation
+import execcode
 
 class Automark(automark.Automark):
 	outputChecks = 2
@@ -57,18 +60,24 @@ class Automark(automark.Automark):
 					concatFound = True
 
 		if volumeFound:
-			outputScore += 2
+			outputScore += 1.5
 			outputCheck[0] = True
 		else:
 			executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
 
 		if concatFound:
-			outputScore += 2
+			outputScore += 1.5
 			outputCheck[1] = True
 		else:
 			executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
 
 		return [outputScore, executionComments, outputCheck]
+
+	def checkExecuteResult(self, result):
+		outputScore = 0
+		if execcode.ExecCode.responseCheckCompiled(result):
+			outputScore += 1.5
+		return outputScore
 
 	def checkIndentation(self):
 		result = indentation.checkIndentation(self.programStructure, 1, 5)

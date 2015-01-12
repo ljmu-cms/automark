@@ -17,6 +17,9 @@ import plyjext.model as model
 import os
 import math
 import string
+import comments
+import indentation
+import execcode
 
 class Automark(automark.Automark):
 	outputChecks = 6
@@ -360,6 +363,12 @@ class Automark(automark.Automark):
 		outputCheck = [consoleShipsMatch, (correctCostCount == numOfShips), (correctLegalityCount == numOfShips), maxFound, fileShipsMatch, (viableCorrectCostCount == viableShipNum)]
 
 		return [outputScore, executionComments, outputCheck]
+
+	def checkExecuteResult(self, result):
+		outputScore = 0
+		if execcode.ExecCode.responseCheckCompiled(result):
+			outputScore += 1
+		return outputScore
 
 	def checkIndentation(self):
 		result = indentation.checkIndentation(self.programStructure, 7, 23)

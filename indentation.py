@@ -43,7 +43,7 @@ def checkIndentationType(program, tab, notab):
 		lineNum += 1
 	return [indentationErrors, firstError]
 
-def checkIndentation(program, thresholdlower, thresholduppper):
+def checkIndentation(program, thresholdlower, thresholdupper):
 	indentErrors = []
 	indentErrors.append(checkIndentationType(program, '\t', ' '))
 	indentErrors.append(checkIndentationType(program, '  ', '\t'))

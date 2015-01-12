@@ -221,6 +221,12 @@ class Automark:
 
 		return [outputScore, executionComments, outputCheck]
 
+	def checkExecuteResult(self, result):
+		outputScore = 0
+		if execcode.ExecCode.responseCheckCompiled(result):
+			outputScore += 1
+		return outputScore
+
 	def checkCommentQuality(self):
 		result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 5.0, 2.0, 0.5)
 		commentScore = result[0]
@@ -285,6 +291,7 @@ class Automark:
 			# Find out what happened to the program
 			result = Automark.getValue(response, 'result')
 			self.executionResult = result
+			executionScore += self.checkExecuteResult(result)
 			if result == 11:
 				print 'Compilation error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, True)
@@ -293,7 +300,6 @@ class Automark:
 				self.programOutput = compInfo
 				self.executionComments = 'Program failed to compile.'
 			elif result == 12:
-				executionScore += 1
 				print 'Runtime error'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
 				stdErrOutput = Automark.getValue(response, 'stderr')
@@ -301,7 +307,6 @@ class Automark:
 				self.programOutput = stdErrOutput
 				self.executionComments = 'Runtime error occurred during execution.'
 			elif result == 13:
-				executionScore += 1
 				print 'Time limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				self.executionTime = Automark.getValue(response, 'time')
@@ -315,14 +320,12 @@ class Automark:
 					executionScore -= 1
 				self.executionComments = 'Execution failed to complete (time limit exceeded).'
 			elif result == 17:
-				executionScore += 1
 				print 'Memory limit exceeded'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
 				self.memoryUsed = Automark.getValue(response, 'memory')
 				print 'Memory used: {} bytes'.format(self.memoryUsed)
 				self.executionComments = 'Execution failed to complete (ran out of memory).'
 			elif result == 19:
-				executionScore += 1
 				print 'Illegal system call'
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
 				stdErrOutput = Automark.getValue(response, 'stderr')
@@ -330,7 +333,6 @@ class Automark:
 				self.programOutput = stdErrOutput
 				self.executionComments = 'Execution failed to complete (illegal system call).'
 			elif result == 15:
-				executionScore += 1
 				response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
 				Automark.checkErrorStatus(response)
 				self.executionTime = Automark.getValue(response, 'time')
@@ -346,6 +348,8 @@ class Automark:
 					self.executionComments += 'Your outputs correctly match the specification.\n'
 			else:
 				print 'Internal error with the code checking system'
+
+		executionScore = round(min(5.0, max(0.0, executionScore)))
 
 		return executionScore		
 
