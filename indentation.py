@@ -61,7 +61,7 @@ def checkIndentation(program, thresholdlower, thresholdupper):
 		indentatinoScore += 0.5
 
 	if indentationErrors > thresholdlower:
-		errorList.append([program.lineNumber[minError[1]], 'Indentation error'])
+		errorList.append([program.lineNumber[minError[1]], 'Indentation errors'])
 
 	return [indentationErrors, indentatinoScore, errorList]
 
