@@ -341,22 +341,22 @@ class Automark(automark.Automark):
 		outputScore = 0
 
 		if consoleShipsMatch:
-			outputScore += 0.1
+			outputScore += 0.2
 
 		if correctCostCount == numOfShips:
 			outputScore += 0.2
 
 		if correctLegalityCount == numOfShips:
-			outputScore += 1.2
+			outputScore += 1.1
 
 		if maxFound:
 			outputScore += 1.5
 
 		if fileShipsMatch:
-			outputScore += 0.1
+			outputScore += 0.7
 
 		if viableCorrectCostCount == viableShipNum:
-			outputScore += 0.1
+			outputScore += 0.2
 
 		self.extraProgramOutput.append(['Output to wagedaily.txt', fileOutput])
 

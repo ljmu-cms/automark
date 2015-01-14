@@ -6,7 +6,7 @@ function out = execute (orig, checks, weights)
   # weights - cx1 weight for each check
 
   score = weights.' * checks;
-  score = round(min(max(score, 0.0), 5.0));
+  score = round(min(max(score, 0.0), 6.0));
 
   diffsq = (score - orig).^2;
   ave = mean(diffsq);

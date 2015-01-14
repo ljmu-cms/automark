@@ -60,13 +60,13 @@ class Automark(automark.Automark):
 					concatFound = True
 
 		if volumeFound:
-			outputScore += 1.5
+			outputScore += 1
 			outputCheck[0] = True
 		else:
 			executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
 
 		if concatFound:
-			outputScore += 1.5
+			outputScore += 1
 			outputCheck[1] = True
 		else:
 			executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
@@ -76,7 +76,7 @@ class Automark(automark.Automark):
 	def checkExecuteResult(self, result):
 		outputScore = 0
 		if execcode.ExecCode.responseCheckCompiled(result):
-			outputScore += 1.5
+			outputScore += 2.5
 		return outputScore
 
 	def checkIndentation(self):

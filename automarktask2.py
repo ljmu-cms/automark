@@ -142,21 +142,21 @@ class Automark(automark.Automark):
 			executionComments += 'You didn\'t output the correct ship volume of {:d}.\n'.format(ship_volume)
 
 		if container_volume_found:
-			outputScore += 0.2
+			outputScore += 0.7
 			outputCheck[1] = True
 			executionComments += 'You correctly output the container volume of {:d}.\n'.format(container_volume)
 		else:
 			executionComments += 'You didn\'t output the correct container volume of {:d}.\n'.format(container_volume)
 
 		if container_max_found:
-			outputScore += 1.6
+			outputScore += 1.9
 			outputCheck[2] = True
 			executionComments += 'You correctly output that the ship could hold {:d} containers.\n'.format(container_max)
 		else:
 			executionComments += 'You didn\'t output that the ship could hold {:d} containers.\n'.format(container_max)
 
 		if container_weight_found:
-			outputScore += 0.8
+			outputScore += 1.0
 			outputCheck[3] = True
 			executionComments += 'You correctly output {:d} as the total weight of the containers.\n'.format(container_weight)
 		else:
@@ -164,7 +164,7 @@ class Automark(automark.Automark):
 
 		if found_legal:
 			if legal_result == legal:
-				outputScore += 0.8
+				outputScore += 0.9
 				outputCheck[4] = True
 				if legal:
 					executionComments += 'You correctly determined that the ship was safe to sail.\n'
@@ -183,7 +183,7 @@ class Automark(automark.Automark):
 	def checkExecuteResult(self, result):
 		outputScore = 0
 		if execcode.ExecCode.responseCheckCompiled(result):
-			outputScore += 1.6
+			outputScore += 1.7
 		return outputScore
 
 	def checkIndentation(self):
