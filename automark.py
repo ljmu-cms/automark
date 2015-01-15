@@ -1,4 +1,5 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
+# vim: et:ts=4:textwidth=80
 """
 automark
 
@@ -23,18 +24,18 @@ import comments
 import srctransform
 
 class Automark:
-	outputChecks = 0
+    outputChecks = 0
 
-	def __init__(self, filename, credentialsFile, build_dir):
-		# Read in the credentials from file
-		with open(credentialsFile) as file:
-			self.user = file.readline().rstrip('\n')
+    def __init__(self, filename, credentialsFile, build_dir):
+        # Read in the credentials from file
+        with open(credentialsFile) as file:
+        	self.user = file.readline().rstrip('\n')
 			self.password = file.readline().rstrip('\n')
 			self.score = 0
 			self.filename = filename
 			self.classname = os.path.splitext(os.path.split(filename)[1])[0]
 
-		# Load in the program file	
+		# Load in the program file
 		self.programStructure = srctransform.loadsource(filename)
 
 		# Initialise the inputs
@@ -351,5 +352,5 @@ class Automark:
 
 		executionScore = round(min(5.0, max(0.0, executionScore)))
 
-		return executionScore		
+		return executionScore
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python 
+# vim: et:ts=4:textwidth=80
 """
 automark
 
