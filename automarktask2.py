@@ -29,7 +29,7 @@ class Automark(automark.Automark):
 
     def setup_inputs(self):
         # Establish the name of the input file
-        findFileInput = FileReaderVisitor()
+        findFileInput = FileReader_Visitor()
         if self.programStructure.programTree != None:
             self.programStructure.programTree.accept(findFileInput)
 
@@ -59,14 +59,6 @@ class Automark(automark.Automark):
         stdin = inputContents
 
         return [stdin, ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight]
-
-    @staticmethod
-    def find_keywords(line, words):
-        found = False
-        for keyword in words:
-            if re.search(re.escape(keyword), line) != None:
-                found = True
-        return found
 
     def check_output_correctness(self, output, inputs):
         ship_length = inputs[1]
@@ -117,20 +109,20 @@ class Automark(automark.Automark):
 
         if len(lines) > 0:
             line = lines[len(lines) - 1]
-            found = self.find_keywords(line, legal_words)
+            found = self._find_keywords(line, legal_words)
             if len(lines) > 1:
                 line = lines[len(lines) - 2]
-                found |= self.find_keywords(line, legal_words)
+                found |= self._find_keywords(line, legal_words)
             if found:
                 legal_result = True
                 found_legal = True
 
         if len(lines) > 0:
             line = lines[len(lines) - 1]
-            found = self.find_keywords(line, illegal_words)
+            found = self._find_keywords(line, illegal_words)
             if len(lines) > 1:
                 line = lines[len(lines) - 2]
-                found |= self.find_keywords(line, illegal_words)
+                found |= self._find_keywords(line, illegal_words)
             if found:
                 legal_result = False
                 found_legal = True
@@ -202,10 +194,18 @@ class Automark(automark.Automark):
         self.errorList.extend(result[3])
         return commentScore
 
+    @staticmethod
+    def _find_keywords(line, words):
+        found = False
+        for keyword in words:
+            if re.search(re.escape(keyword), line) != None:
+                found = True
+        return found
 
-class FileReaderVisitor(model.Visitor):
+# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+class FileReader_Visitor(model.Visitor):
     def __init__(self, verbose=False):
-        super(FileReaderVisitor, self).__init__()
+        super(FileReader_Visitor, self).__init__()
         self.filename = []
 
     def leave_InstanceCreation(self, element):

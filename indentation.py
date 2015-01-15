@@ -21,7 +21,7 @@ def substring(line, tab, start):
         match = False
     return match
 
-def check_indentation_type(program, tab, notab):
+def _check_indentation_type(program, tab, notab):
     indentationErrors = 0
     tabsize = len(tab)
     indent = 0
@@ -46,10 +46,10 @@ def check_indentation_type(program, tab, notab):
 
 def check_indentation(program, thresholdlower, thresholdupper):
     indentErrors = []
-    indentErrors.append(check_indentation_type(program, '\t', ' '))
-    indentErrors.append(check_indentation_type(program, '  ', '\t'))
-    indentErrors.append(check_indentation_type(program, '   ', '\t'))
-    indentErrors.append(check_indentation_type(program, '    ', '\t'))
+    indentErrors.append(_check_indentation_type(program, '\t', ' '))
+    indentErrors.append(_check_indentation_type(program, '  ', '\t'))
+    indentErrors.append(_check_indentation_type(program, '   ', '\t'))
+    indentErrors.append(_check_indentation_type(program, '    ', '\t'))
 
     minError, minErrorIndex = min((val, idx) for (idx, val) in enumerate(indentErrors))
     indentationErrors = minError[0]

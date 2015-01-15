@@ -36,7 +36,7 @@ class Automark:
             self.classname = os.path.splitext(os.path.split(filename)[1])[0]
 
         # Load in the program file
-        self.programStructure = srctransform.loadsource(filename)
+        self.programStructure = srctransform.load_source(filename)
 
         # Initialise the inputs
         self.stdin = ''

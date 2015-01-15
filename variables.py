@@ -13,7 +13,7 @@ import plyjext.model as model
 import re
 
 def check_variable_name_quality(program, threshold):
-	findVars = VariableVisitor()
+	findVars = Variable_Visitor()
 	if program.programTree != None:
 		program.programTree.accept(findVars)
 	variableShort = 0
@@ -41,9 +41,10 @@ def check_variable_name_quality(program, threshold):
 		variablesScore = 0
 	return [variablesScore, variableShort, variableEnumeration, errorList]
 
-class VariableVisitor(model.Visitor):
+# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+class Variable_Visitor(model.Visitor):
 	def __init__(self, verbose=False):
-		super(VariableVisitor, self).__init__()
+		super(Variable_Visitor, self).__init__()
 		self.variables = []
 
 	def leave_VariableDeclaration(self, element):

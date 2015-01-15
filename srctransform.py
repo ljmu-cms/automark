@@ -18,7 +18,7 @@ import collections
 
 Program = collections.namedtuple('Program', ['program', 'programLines', 'fullProgram', 'programTree', 'lineNumber', 'lineCharacterStart'])
 
-def loadsource(filename):
+def load_source(filename):
     # Load in the program from file
     fullProgram = ''
     with open(filename) as file:

@@ -30,7 +30,7 @@ class Automark(automark.Automark):
 
     def setup_inputs(self):
         # Establish the name of the input file
-        findFileInput = InstanceCreationParamVisitor('FileReader')
+        findFileInput = InstanceCreationParam_Visitor('FileReader')
         if self.programStructure.programTree != None:
             self.programStructure.programTree.accept(findFileInput)
 
@@ -41,7 +41,7 @@ class Automark(automark.Automark):
             self.programStructure = self.programStructure._replace(program = transformed)
 
         # Establish the name of the output file
-        findFileOutput = InstanceCreationParamVisitor('PrintWriter')
+        findFileOutput = InstanceCreationParam_Visitor('PrintWriter')
         if self.programStructure.programTree != None:
             self.programStructure.programTree.accept(findFileOutput)
 
@@ -50,8 +50,6 @@ class Automark(automark.Automark):
         if len(filename) > 0:
             transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self.programStructure.program)
             self.programStructure = self.programStructure._replace(program = transformed)
-
-
 
         # Generate the input file
         journeyCosts = []
@@ -94,60 +92,6 @@ class Automark(automark.Automark):
 
         return [stdin, numOfShips, shipIDs, journeyIDs, journeyCosts, recommendedMax]
 
-    @staticmethod
-    def check_legal(line):
-        legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 'lower', 'acceptable']
-        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
-
-        found_legal = False
-        legal_result = False
-
-        found = Automark.find_keywords(line, legal_words)
-        if found:
-            legal_result = True
-            found_legal = True
-
-        found = Automark.find_keywords(line, illegal_words)
-        if found:
-            legal_result = False
-            found_legal = True
-
-        return [found_legal, legal_result]
-
-    @staticmethod
-    def find_keywords(line, words):
-        found = False
-        for keyword in words:
-            if re.search(re.escape(keyword), line, re.IGNORECASE) != None:
-                found = True
-        return found
-
-    @staticmethod
-    def checkExistenceInSections(output, sections, checkList):
-        # Check the journey cost and viability
-        correctCount = 0
-        outputLines = output.splitlines()
-
-        sections.append('defenestrate')
-        section = 0
-        current = sections[section]
-        next = sections[section + 1]
-        found = False
-        for line in outputLines:
-            if re.search(next, line):
-                if found:
-                    correctCount += 1
-                section += 1
-                current = next
-                next = sections[section + 1]
-            if re.search(str(checkList[section]), line):
-                found = True
-
-        if found:
-            correctCount += 1
-
-        return correctCount
-    
     def check_output_correctness(self, output, inputs):
         numOfShips = inputs[1]
         shipIDs = inputs[2]
@@ -175,13 +119,10 @@ class Automark(automark.Automark):
         seen_add = seen.add
         journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
 
-
         #print shipIDsOutput
         #print shipIDs
         #print journeyIDsOutput
         #print journeyIDs
-
-
 
         if len(shipIDsOutput) >= len(shipIDs):
             shipsMatch = True
@@ -218,7 +159,7 @@ class Automark(automark.Automark):
         if consoleShipsMatch:
             # Check the journey cost and viability
             journeyCostsInt = [int(x) for x in journeyCosts]
-            correctCostCount = Automark.checkExistenceInSections(output, sections, journeyCostsInt)
+            correctCostCount = Automark._check_existence_in_sections(output, sections, journeyCostsInt)
             sections.append('defenestrate')
             section = 0
             current = sections[section]
@@ -264,14 +205,14 @@ class Automark(automark.Automark):
         maxStart = len(outputLines) - 1
         maxFound = False
         while (not maxFound) and (maxStart >= 0):
-            if Automark.find_keywords(outputLines[maxStart - 1], ['highest', 'expensive', 'maximum']):
+            if Automark._find_keywords(outputLines[maxStart - 1], ['highest', 'expensive', 'maximum']):
                 maxFound = True
             maxStart -= 1
 
         if maxFound:
             maxFound = False
             for line in outputLines[maxStart:]:
-                maxFound |= Automark.find_keywords(line, [highestShipID, highestJourneyID, '{:.0f}'.format(highestJourneyCost)])
+                maxFound |= Automark._find_keywords(line, [highestShipID, highestJourneyID, '{:.0f}'.format(highestJourneyCost)])
 
         executionComments += 'The maximum recommended journey cost entered by the user was {:d}.\n'.format(recommendedMax)
         executionComments += 'The most expensive journey within this cost was {} costing {:.1f}.\n'.format(highestShipID, highestJourneyCost)
@@ -307,7 +248,6 @@ class Automark(automark.Automark):
         seen_add = seen.add
         journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
 
-
         viableShipsMatch = False
         if viableShipIDs == shipIDsOutput:
             viableShipsMatch = True
@@ -332,7 +272,7 @@ class Automark(automark.Automark):
         viableCorrectCostCount = 0
         if fileShipsMatch:
             viableJourneyCostsInt = [int(x) for x in viableJourneyCosts]
-            viableCorrectCostCount = Automark.checkExistenceInSections(output, sections, viableJourneyCostsInt)
+            viableCorrectCostCount = Automark._check_existence_in_sections(output, sections, viableJourneyCostsInt)
 
         if viableCorrectCostCount == viableShipNum:
             executionComments += 'Your program correctly output the costs for these ships.\n'
@@ -386,10 +326,64 @@ class Automark(automark.Automark):
         self.errorList.extend(result[3])
         return commentScore
 
+    @staticmethod
+    def check_legal(line):
+        legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 'lower', 'acceptable']
+        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
 
-class InstanceCreationParamVisitor(model.Visitor):
+        found_legal = False
+        legal_result = False
+
+        found = Automark._find_keywords(line, legal_words)
+        if found:
+            legal_result = True
+            found_legal = True
+
+        found = Automark._find_keywords(line, illegal_words)
+        if found:
+            legal_result = False
+            found_legal = True
+
+        return [found_legal, legal_result]
+
+    @staticmethod
+    def _find_keywords(line, words):
+        found = False
+        for keyword in words:
+            if re.search(re.escape(keyword), line, re.IGNORECASE) != None:
+                found = True
+        return found
+
+    @staticmethod
+    def _check_existence_in_sections(output, sections, checkList):
+        # Check the journey cost and viability
+        correctCount = 0
+        outputLines = output.splitlines()
+
+        sections.append('defenestrate')
+        section = 0
+        current = sections[section]
+        next = sections[section + 1]
+        found = False
+        for line in outputLines:
+            if re.search(next, line):
+                if found:
+                    correctCount += 1
+                section += 1
+                current = next
+                next = sections[section + 1]
+            if re.search(str(checkList[section]), line):
+                found = True
+
+        if found:
+            correctCount += 1
+
+        return correctCount
+    
+# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+class InstanceCreationParam_Visitor(model.Visitor):
     def __init__(self, className, paramNum=0, verbose=False):
-        super(InstanceCreationParamVisitor, self).__init__()
+        super(InstanceCreationParam_Visitor, self).__init__()
         self.className = className
         self.paramNum = paramNum
         self.params = []

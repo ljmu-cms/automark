@@ -14,14 +14,14 @@ This script allows a program to be checked using the ideone api.
 
 import re
 
-def lineFromCharacterNoSpace(program, charPos):
+def _line_from_character_no_space(program, charPos):
 	line = 0
 	while (line < len(program.lineCharacterStart)) and (charPos >= program.lineCharacterStart[line]):
 		line += 1
 	return line
 
-def lineFromCharacter(program, charPos):
-	return program.lineNumber[lineFromCharacterNoSpace(program, charPos) - 1]
+def _line_from_character(program, charPos):
+	return program.lineNumber[_line_from_character_no_space(program, charPos) - 1]
 
 def check_comment_quality(program, frequencyThreshold, consistencyThreshold, aveOffset, sdOffset, aveWeight):
 	# Regex expressions search for block comments or full-line comments.
@@ -37,20 +37,20 @@ def check_comment_quality(program, frequencyThreshold, consistencyThreshold, ave
 		gapSum = 0
 		previousEnd = 0
 		for blockComment in blockComments:
-			gapSum += lineFromCharacterNoSpace(program, blockComment.start()) - previousEnd
-			previousEnd = lineFromCharacterNoSpace(program, blockComment.end()) + 1
+			gapSum += _line_from_character_no_space(program, blockComment.start()) - previousEnd
+			previousEnd = _line_from_character_no_space(program, blockComment.end()) + 1
 		gapSum += len(program.programLines) - previousEnd
 		commentGapAverage = gapSum / float(commentCount)
 
 		gapSumSquared = 0.0
 		previousEnd = 0
 		for blockComment in blockComments:
-			gapSumSquared += ((lineFromCharacterNoSpace(program, blockComment.start()) - previousEnd) - commentGapAverage)**2.0
-			previousEnd = lineFromCharacterNoSpace(program, blockComment.end()) + 1
+			gapSumSquared += ((_line_from_character_no_space(program, blockComment.start()) - previousEnd) - commentGapAverage)**2.0
+			previousEnd = _line_from_character_no_space(program, blockComment.end()) + 1
 		gapSumSquared += ((len(program.programLines) - previousEnd) - commentGapAverage)**2.0
 		commentGapSD = (gapSumSquared / commentCount)**0.5
 		
-		lastCommentLine = lineFromCharacter(program, blockComments[commentCount - 1].end())
+		lastCommentLine = _line_from_character(program, blockComments[commentCount - 1].end())
 
 	commentFrequency = max(1.0 - ((max(commentGapAverage - aveOffset, 0.0)) * aveWeight), 0.0)
 	commentConsistency = max(1.0 - ((max(commentGapSD - sdOffset, 0.0)) * 1.0), 0.0)
