@@ -43,6 +43,7 @@ class ExecCode:
         self.classname = classname
         self.tempsourceleaf = classname + '.java'
 
+    # This doesn't confirm to PEP 8, but has been left to match the ideone API
     def createSubmission(self, user, password, sourceCode, language, input, run, private):
         'Create a new piece of code to be compiled and executed'
         # Store the persistent info
@@ -59,7 +60,7 @@ class ExecCode:
 
         # Create the temporary source file to build based on the source code provided
         self.tempsource = os.path.join(self.tempfolder, self.tempsourceleaf)
-        ExecCode.tidyup(self.tempfolder)
+        ExecCode._tidy_up(self.tempfolder)
         with open(self.tempsource, 'w') as file:
             file.write(sourceCode)
 
@@ -72,6 +73,7 @@ class ExecCode:
 
         return status
 
+    # This doesn't confirm to PEP 8, but has been left to match the ideone API
     def getSubmissionStatus(self, user, password, link):
         'Get the status of the code submission'
         if self.status == 0:
@@ -79,9 +81,10 @@ class ExecCode:
             status = {'item': [Status('error', 'OK'), Status('status', -1), Status('result', 0)]}
         else:
             # Get the response from the compilation/executionsub-thread
-            status = self.submission.getSubmissionStatus()
+            status = self.submission._get_submission_status()
         return status
 
+    # This doesn't confirm to PEP 8, but has been left to match the ideone API
     def getSubmissionDetails(self, user, password, link, withSource, withInput, withOutput, withStderr, withCmpinfo):
         'Get detailed information about a submission compilation and execution'
         if self.status == 0:
@@ -104,14 +107,14 @@ class ExecCode:
                 details['item'].append(Status('cmpinfo', ''))
         else:
             # Get the response from the compilation/executionsub-thread
-            details = self.submission.getSubmissionDetails(withSource, withInput, withOutput, withStderr, withCmpinfo)
+            details = self.submission.get_submission_details(withSource, withInput, withOutput, withStderr, withCmpinfo)
         details['item'].append(Status('date', self.date))
         if withSource:
             details['item'].append(Status('source', self.sourceCode))
         return details
 
     @staticmethod
-    def getValue(response, key):
+    def get_value(response, key):
         'Helper function to extract a value from the return data for the given key'
         value = ''
         # Find the item with the appropriate key
@@ -122,14 +125,15 @@ class ExecCode:
         return value
 
     @staticmethod
-    def checkSubmissionsStatus(status):
+    def check_submissions_status(status):
+        description = 'Unknown'
         'Print out a status string based on the status number'
         if status < 0:
-            print 'Waiting for compilation'
+            description = 'Waiting for compilation'
         elif status == 1:
-            print 'Compiling'
+            description = 'Compiling'
         elif status == 3:
-            print 'Running'
+            description = 'Running'
 
     #http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
     @staticmethod
@@ -156,14 +160,14 @@ class ExecCode:
         return None
 
     @staticmethod
-    def responseCheckCompiled(response):
+    def response_check_compiled(response):
         compiled = False
         if response >= 12:
             compiled = True
         return compiled
 
     @staticmethod
-    def tidyup(tempfolder):
+    def _tidy_up(tempfolder):
         for file in os.listdir(tempfolder):
             extension = os.path.splitext(file)[1]
             if (extension == '.class') or (extension == '.java'):
@@ -196,32 +200,32 @@ class ExecCode:
         def run(self):
             'The thread entry point'
             # Compile the source file
-            self.compileResult = self.compile_source(self.tempfolder, self.tempsource)
+            self.compileResult = self._compile_source(self.tempfolder, self.tempsource)
             if self.compileResult[0] != 0:
                 # The compilation failed, so just return the output from the compilation
                 self.cmpinfo = self.compileResult[1]
-                self.setSubmissionStatus('OK', 0, 11)
+                self._set_submission_status('OK', 0, 11)
             else:
                 # The compilation was successful
                 self.cmpinfo = ''
-                self.setSubmissionStatus('OK', 3, 0)
+                self._set_submission_status('OK', 3, 0)
                 # Execute the resulting Java class file
-                self.execResult = self.execute(self.tempfolder, self.classname, self.input)
+                self.execResult = self._execute(self.tempfolder, self.classname, self.input)
                 # Capture the returned output from the execution
                 self.output = self.execResult[1]
                 self.stderr = self.execResult[2]
                 if self.execResult[0] != 0:
                     # The execuation failed, so note the details
-                    self.setSubmissionStatus('OK', 0, 12)
+                    self._set_submission_status('OK', 0, 12)
                 else:
                     if self.timelimitexceeded:
                         # The execution took too long
-                        self.setSubmissionStatus('OK', 0, 13)
+                        self._set_submission_status('OK', 0, 13)
                     else:
                         # The execuation was successful
-                        self.setSubmissionStatus('OK', 0, 15)
+                        self._set_submission_status('OK', 0, 15)
 
-        def setSubmissionStatus(self, error, status, result):
+        def _set_submission_status(self, error, status, result):
             'For internal use. Sets the status info for a given submssion.'
             # Ensure only one thread can read/write the details simultaneously by acquring a lock
             self.updateStatus.acquire()
@@ -248,7 +252,7 @@ class ExecCode:
         #  19 - illegal system call - the program tried to call illegal system function
         #  20 - internal error - some problem occurred; try to submit the program again
 
-        def getSubmissionStatus(self):
+        def _get_submission_status(self):
             'For internal use. Gets status info about a given submssion.'
             # Ensure only one thread can read/write the details simultaneously by acquring a lock
             self.updateStatus.acquire()
@@ -258,7 +262,7 @@ class ExecCode:
             self.updateStatus.release()
             return status
 
-        def getSubmissionDetails(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+        def get_submission_details(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
             'For internal use. Gets details of a completed submssion.'
             details = {'item': []}
             details['item'].append(Status('error', self.error))
@@ -279,17 +283,17 @@ class ExecCode:
                 details['item'].append(Status('cmpinfo', self.cmpinfo))
             return details
 
-        def compile_source(self, tempfolder, tempsource):
+        def _compile_source(self, tempfolder, tempsource):
             'For internal use. Compiles the java source code.'
             result = False
             output = ''
             if ExecCode.which('javac') == None:
                 # The Java compiler couldn't be found
                 output = 'Java compiler javac could not be found'
-                self.setSubmissionStatus('OK', 0, 20)
+                self._set_submission_status('OK', 0, 20)
             else:
                 # The Java compiler is present
-                self.setSubmissionStatus('OK', 1, 0)
+                self._set_submission_status('OK', 1, 0)
                 # Execuate the compilation as a subprocess
                 program = Popen(['javac', '-classpath', tempfolder, '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=STDOUT, stdin=PIPE, stdout=PIPE)
                 # Collect any outputs from the compilation process
@@ -298,26 +302,26 @@ class ExecCode:
                 result = program.returncode
                 if result == 0:
                     # Compilation error
-                    self.setSubmissionStatus('OK', 0, 11)
+                    self._set_submission_status('OK', 0, 11)
                 else:
                     # Compilation success
-                    self.setSubmissionStatus('OK', 3, 0)
+                    self._set_submission_status('OK', 3, 0)
             return [result, output]
 
-        def execute(self, tempfolder, classname, input):
+        def _execute(self, tempfolder, classname, input):
             'For internal use. Executes the java source code.'
             output = ''
             if ExecCode.which('java') == None:
                 # The Java VM could not be found
                 print 'Java VM could not be found'
-                self.setSubmissionStatus('OK', 1, 0)
+                self._set_submission_status('OK', 1, 0)
             else:
                 # The Java VM is present
                 self.timeStart = time.time()
                 # Execute the compiled code as a subprocess
                 program = Popen(['java', classname], shell=False, cwd=tempfolder, bufsize=1, stderr=PIPE, stdin=PIPE, stdout=PIPE, close_fds=ON_POSIX)
                 outputQueue = Queue()
-                outputCollector = ExecCode.threading.Thread(target=ExecCode.Submission.enqueue_output, args=(program.stdout, outputQueue))
+                outputCollector = ExecCode.threading.Thread(target=ExecCode.Submission._enqueue_output, args=(program.stdout, outputQueue))
                 outputCollector.daemon = True
                 outputCollector.start()
                 # Pass the input to the running code
@@ -355,7 +359,7 @@ class ExecCode:
 
         # http://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
         @staticmethod
-        def enqueue_output(out, queue):
+        def _enqueue_output(out, queue):
                 for line in iter(out.readline, b''):
                     queue.put(line)
                 out.close()
@@ -372,9 +376,9 @@ class ExecCode:
 #    time.sleep(waitTime)
 #    waitTime = 0.1
 #    response = program.getSubmissionStatus('', '', '')
-#    status = ExecCode.getValue(response, 'status')
-#    ExecCode.checkSubmissionsStatus (status)
+#    status = ExecCode.get_value(response, 'status')
+#    print ExecCode.check_submissions_status (status)
 #details = program.getSubmissionDetails('', '', '', True, True, True, True, True)
-#print ExecCode.getValue(details, 'output')
+#print ExecCode.get_value(details, 'output')
 
 

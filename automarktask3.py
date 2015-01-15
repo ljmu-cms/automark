@@ -367,7 +367,7 @@ class Automark(automark.Automark):
 
     def checkExecuteResult(self, result):
         outputScore = 0
-        if execcode.ExecCode.responseCheckCompiled(result):
+        if execcode.ExecCode.response_check_compiled(result):
             outputScore += 1.5
         return outputScore
 
