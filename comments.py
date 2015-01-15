@@ -23,7 +23,7 @@ def lineFromCharacterNoSpace(program, charPos):
 def lineFromCharacter(program, charPos):
 	return program.lineNumber[lineFromCharacterNoSpace(program, charPos) - 1]
 
-def checkCommentQuality(program, frequencyThreshold, consistencyThreshold, aveOffset, sdOffset, aveWeight):
+def check_comment_quality(program, frequencyThreshold, consistencyThreshold, aveOffset, sdOffset, aveWeight):
 	# Regex expressions search for block comments or full-line comments.
 	# Multiple full-line comments without other text are considered as a single match
 	blockComments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', program.program, (re.MULTILINE | re.DOTALL)))

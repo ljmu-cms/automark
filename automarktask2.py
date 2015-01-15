@@ -22,12 +22,12 @@ import indentation
 import execcode
 
 class Automark(automark.Automark):
-    outputChecks = 5
+    output_checks = 5
 
     def __init__(self, filename, credentialsFile, build_dir):
         automark.Automark.__init__(self, filename, credentialsFile, build_dir)
 
-    def setupInputs(self):
+    def setup_inputs(self):
         # Establish the name of the input file
         findFileInput = FileReaderVisitor()
         if self.programStructure.programTree != None:
@@ -68,7 +68,7 @@ class Automark(automark.Automark):
                 found = True
         return found
 
-    def checkOutputCorrectness(self, output, inputs):
+    def check_output_correctness(self, output, inputs):
         ship_length = inputs[1]
         ship_width = inputs[2]
         ship_height= inputs[3]
@@ -181,21 +181,21 @@ class Automark(automark.Automark):
 
         return [outputScore, executionComments, outputCheck]
 
-    def checkExecuteResult(self, result):
+    def check_execute_result(self, result):
         outputScore = 0
         if execcode.ExecCode.response_check_compiled(result):
             outputScore += 1.7
         return outputScore
 
-    def checkIndentation(self):
-        result = indentation.checkIndentation(self.programStructure, 1, 14)
+    def check_indentation(self):
+        result = indentation.check_indentation(self.programStructure, 1, 14)
         self.indentationErrors = result[0]
         indentationScore = result[1]
         self.errorList.extend(result[2])
         return indentationScore
 
-    def checkCommentQuality(self):
-        result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 2.0, 6.0, 0.08)
+    def check_comment_quality(self):
+        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 2.0, 6.0, 0.08)
         commentScore = result[0]
         self.commentGapAverage = result[1]
         self.commentGapSD = result[2]

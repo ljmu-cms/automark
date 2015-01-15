@@ -69,9 +69,9 @@ class BatchMark:
         self._construct_name_map()
         with open(self._summary_out, 'w') as self._summary:
             self._output_csv_co(['Username', 'Name'])
-            self._output_csv_co(self._taskSpecific.Automark.getScoresStructure())
-            self._output_csv_co(self._taskSpecific.Automark.getInternalStatsStructure())
-            self._output_csv_nl(self._taskSpecific.Automark.getOutputChecksStructure())
+            self._output_csv_co(self._taskSpecific.Automark.get_scores_structure())
+            self._output_csv_co(self._taskSpecific.Automark.get_internal_stats_structure())
+            self._output_csv_nl(self._taskSpecific.Automark.get_output_checks_structure())
             self._create_new_feedback_document()
 
     #probably won't work for Windows
@@ -142,8 +142,8 @@ class BatchMark:
                     self._write_comments_to_document(student_dir, student_dir_name, marks)
                     self._output_csv_co([student_dir_name, student_name])
                     self._output_csv_co(marks.getScores())
-                    self._output_csv_co(marks.getInternalStats())
-                    self._output_csv_nl(marks.getOutputChecks())
+                    self._output_csv_co(marks.get_internal_stats())
+                    self._output_csv_nl(marks.get_output_checks())
 
                 #just do something extra
                 #self._unzip_submission(student_dir)
@@ -161,11 +161,11 @@ class BatchMark:
         for row in range(1,16):
             self._feedback_document.tables[2].cell(row, 2).text = ''
     
-        executionScore = marks.getExecutionScore()
-        indentationScore = marks.getIndentationScore()
-        variablesScore = marks.getVariablesScore()
-        commentScore = marks.getCommentScore()
-        totalScore = marks.getTotalScore()
+        executionScore = marks.get_execution_score()
+        indentationScore = marks.get_indentation_score()
+        variablesScore = marks.get_variables_score()
+        commentScore = marks.get_comment_score()
+        totalScore = marks.get_total_score()
         efficientScore = 0
         if executionScore > 4:
             efficientScore = 1
@@ -196,12 +196,12 @@ class BatchMark:
         feedback_document.add_heading('Program Comments', 2)
 
         feedback_document.add_heading('Program input', 3)
-        inputs = marks.getInput().splitlines()
+        inputs = marks.get_input().splitlines()
 
         for line in inputs:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
-        extraProgramInputs = marks.getExtraProgrammInputs()
+        extraProgramInputs = marks.get_extra_program_inputs()
         for extra in extraProgramInputs:
             feedback_document.add_heading(extra[0], 3)
             extraLines = extra[1].splitlines()
@@ -210,11 +210,11 @@ class BatchMark:
     
         feedback_document.add_heading('Program output', 3)
 
-        output = marks.getOutput().splitlines()
+        output = marks.get_output().splitlines()
         for line in output:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
-        extraProgramOutputs = marks.getExtraProgrammOutputs()
+        extraProgramOutputs = marks.get_extra_program_outputs()
         for extra in extraProgramOutputs:
             feedback_document.add_heading(extra[0], 3)
             extraLines = extra[1].splitlines()
@@ -223,13 +223,13 @@ class BatchMark:
 
         feedback_document.add_heading('Execution comments', 3)
 
-        comments = marks.getExecutionComments().splitlines()
+        comments = marks.get_execution_comments().splitlines()
         for line in comments:
             feedback_document.add_paragraph(line, style='CodeChunkComment')
 
         feedback_document.add_heading('Your code', 3)
-        program = marks.getFullProgram().splitlines()
-        comments = marks.getErrorList()
+        program = marks.get_full_program().splitlines()
+        comments = marks.get_error_list()
         lineNum = 1
         for line in program:
             line_encoded = line.decode('ascii', 'replace')

@@ -23,12 +23,12 @@ import indentation
 import execcode
 
 class Automark(automark.Automark):
-    outputChecks = 6
+    output_checks = 6
 
     def __init__(self, filename, credentialsFile, build_dir):
         automark.Automark.__init__(self, filename, credentialsFile, build_dir)
 
-    def setupInputs(self):
+    def setup_inputs(self):
         # Establish the name of the input file
         findFileInput = InstanceCreationParamVisitor('FileReader')
         if self.programStructure.programTree != None:
@@ -148,7 +148,7 @@ class Automark(automark.Automark):
 
         return correctCount
     
-    def checkOutputCorrectness(self, output, inputs):
+    def check_output_correctness(self, output, inputs):
         numOfShips = inputs[1]
         shipIDs = inputs[2]
         journeyIDs = inputs[3]
@@ -365,21 +365,21 @@ class Automark(automark.Automark):
 
         return [outputScore, executionComments, outputCheck]
 
-    def checkExecuteResult(self, result):
+    def check_execute_result(self, result):
         outputScore = 0
         if execcode.ExecCode.response_check_compiled(result):
             outputScore += 1.5
         return outputScore
 
-    def checkIndentation(self):
-        result = indentation.checkIndentation(self.programStructure, 7, 23)
+    def check_indentation(self):
+        result = indentation.check_indentation(self.programStructure, 7, 23)
         self.indentationErrors = result[0]
         indentationScore = result[1]
         self.errorList.extend(result[2])
         return indentationScore
 
-    def checkCommentQuality(self):
-        result = comments.checkCommentQuality(self.programStructure, 0.75, 0.75, 1.0, 4.0, 0.06)
+    def check_comment_quality(self):
+        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 1.0, 4.0, 0.06)
         commentScore = result[0]
         self.commentGapAverage = result[1]
         self.commentGapSD = result[2]
