@@ -35,8 +35,13 @@ class Automark(automark.Automark):
 
         # Replace the input file with "input.txt" so we can control it
         if len(find_file_input.filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(find_file_input.filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self._program_structure.program)
-            self._program_structure = self._program_structure._replace(program = transformed)
+            transformed = re.sub(
+                r'(FileReader\s*\(\s*)(' + re.escape(
+                find_file_input.filename[0][0]) + 
+                ')(\s*\))', r'\1"input.txt"\3', 
+                self._program_structure.program)
+            self._program_structure = self._program_structure._replace(
+                program = transformed)
 
         # Generate variables for the input file
         ship_length = random.randint(20, 100)
@@ -46,19 +51,27 @@ class Automark(automark.Automark):
         container_width = random.randint(3, 10)
         container_height = random.randint(3, 10)
         container_weight = random.randint(3, 20)
-        ship_max_weight = (math.trunc ((ship_length * ship_width * ship_height) / (container_length * container_width * container_height)) * container_weight) + 1
+        ship_max_weight = (math.trunc ((
+            ship_length * ship_width * ship_height) / (container_length * 
+            container_width * container_height)) * container_weight) + 1
 
         if not os.path.exists(self._build_dir):
             os.makedirs(self._build_dir)
 
-        input_contents = '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n'.format(ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight)
+        input_contents = (
+            '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n').format(
+            ship_length, ship_width, ship_height, container_length, 
+            container_width, container_height, container_weight, 
+            ship_max_weight)
         file_to_write = os.path.join(self._build_dir, "input.txt")
         with open(file_to_write, 'w') as input_file:
             input_file.write(input_contents)
 
         stdin = input_contents
 
-        return [stdin, ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight]
+        return [stdin, ship_length, ship_width, ship_height, container_length, 
+            container_width, container_height, container_weight, 
+            ship_max_weight]
 
     def check_output_correctness(self, output, inputs):
         ship_length = inputs[1]
@@ -77,7 +90,8 @@ class Automark(automark.Automark):
         lines = output.splitlines()
     
         ship_volume = ship_length * ship_height * ship_width
-        container_volume = container_length * container_height * container_width
+        container_volume = (
+            container_length * container_height * container_width)
         container_max = math.trunc(ship_volume / container_volume)
         container_weight = container_max * container_weight
         legal = (container_weight <= ship_max_weight)
@@ -102,7 +116,8 @@ class Automark(automark.Automark):
 
         # Check the last line
         legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter']
-        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too']
+        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 
+            'heavier', 'greater', 'higher', 'too']
 
         found_legal = False
         legal_result = False
@@ -130,46 +145,60 @@ class Automark(automark.Automark):
         if ship_volume_found:
             output_score += 0.2
             output_check[0] = True
-            execution_comments += 'You correctly output the ship volume of {:d}.\n'.format(ship_volume)
+            execution_comments += (
+                'You correctly output the ship volume of {:d}.\n').format(
+                ship_volume)
         else:
-            execution_comments += 'You didn\'t output the correct ship volume of {:d}.\n'.format(ship_volume)
+            execution_comments += ("You didn't output the correct ship "
+                "volume of {:d}.\n").format(ship_volume)
 
         if container_volume_found:
             output_score += 0.7
             output_check[1] = True
-            execution_comments += 'You correctly output the container volume of {:d}.\n'.format(container_volume)
+            execution_comments += ('You correctly output the container '
+                'volume of {:d}.\n').format(container_volume)
         else:
-            execution_comments += 'You didn\'t output the correct container volume of {:d}.\n'.format(container_volume)
+            execution_comments += ("You didn't output the correct container "
+                "volume of {:d}.\n").format(container_volume)
 
         if container_max_found:
             output_score += 1.9
             output_check[2] = True
-            execution_comments += 'You correctly output that the ship could hold {:d} containers.\n'.format(container_max)
+            execution_comments += ('You correctly output that the ship '
+                'could hold {:d} containers.\n').format(container_max)
         else:
-            execution_comments += 'You didn\'t output that the ship could hold {:d} containers.\n'.format(container_max)
+            execution_comments += ("You didn't output that the ship could "
+                "hold {:d} containers.\n").format(container_max)
 
         if container_weight_found:
             output_score += 1.0
             output_check[3] = True
-            execution_comments += 'You correctly output {:d} as the total weight of the containers.\n'.format(container_weight)
+            execution_comments += ('You correctly output {:d} as the total '
+                'weight of the containers.\n').format(container_weight)
         else:
-            execution_comments += 'You didn\'t output the total weight of the containers as {:d}.\n'.format(container_weight)
+            execution_comments += ("You didn't output the total weight of "
+                "the containers as {:d}.\n").format(container_weight)
 
         if found_legal:
             if legal_result == legal:
                 output_score += 0.9
                 output_check[4] = True
                 if legal:
-                    execution_comments += 'You correctly determined that the ship was safe to sail.\n'
+                    execution_comments += ('You correctly determined that the '
+                        'ship was safe to sail.\n')
                 else:
-                    execution_comments += 'You correctly determined that the ship wasn\'t safe to sail.\n'
+                    execution_comments += ("You correctly determined that the "
+                        "ship wasn't safe to sail.\n")
             else:
                 if legal:
-                    execution_comments += 'You incorrectly said the ship was unsafe to sail.\n'
+                    execution_comments += ('You incorrectly said the ship was '
+                        'unsafe to sail.\n')
                 else:
-                    execution_comments += 'You incorrectly said the ship was safe to sail.\n'
+                    execution_comments += ('You incorrectly said the ship was '
+                        'safe to sail.\n')
         else:
-            execution_comments += 'You didn\'t output whether the ship was safe to sail.\n'
+            execution_comments += ("You didn't output whether the ship was "
+                "safe to sail.\n")
 
         return [output_score, execution_comments, output_check]
 
@@ -187,7 +216,8 @@ class Automark(automark.Automark):
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
+        result = comments.check_comment_quality(
+            self._program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
         comment_score = result[0]
         self._comment_gap_average = result[1]
         self._comment_gap_sd = result[2]
@@ -202,7 +232,8 @@ class Automark(automark.Automark):
                 found = True
         return found
 
-# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
 class FileReader_Visitor(model.Visitor):
     def __init__(self, verbose=False):
         super(FileReader_Visitor, self).__init__()

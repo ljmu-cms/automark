@@ -32,7 +32,9 @@ from zipfile import ZipFile
 # Summary output (optional)
 
 class BatchMark:
-    def __init__(self, task, marking_dir, marker_name, build_dir, feedback_doc_name, marking_sheet_name, summary_out):
+    def __init__(
+            self, task, marking_dir, marker_name, build_dir, 
+            feedback_doc_name, marking_sheet_name, summary_out):
         print ('Task: ' + str(task))
         print ("Folder to check in: " + marking_dir)
         print ('Marker name: ' + marker_name)
@@ -60,7 +62,8 @@ class BatchMark:
         #load student feedback form as a template
         self._feedback_document = Document(feedback_doc_name)
         #load my marking sheet 'PT' from workbook
-        self._marking_sheet = xlrd.open_workbook(marking_sheet_name).sheet_by_name(marker_name)
+        self._marking_sheet = xlrd.open_workbook(
+            marking_sheet_name).sheet_by_name(marker_name)
 
     #do things
     def go(self):
@@ -68,18 +71,17 @@ class BatchMark:
         self._name_map = {}
         self._construct_name_map()
         with open(self._summary_out, 'w') as self._summary:
-            self._output_csv_co(['Username', 'Name'])
-            self._output_csv_co(self._task_specific.Automark.get_scores_structure())
-            self._output_csv_co(self._task_specific.Automark.get_internal_stats_structure())
-            self._output_csv_nl(self._task_specific.Automark.get_output_checks_structure())
+            self._output_csv_co(
+                ['Username', 'Name'])
+            self._output_csv_co(
+                self._task_specific.Automark.get_scores_structure())
+            self._output_csv_co(
+                self._task_specific.Automark.get_internal_stats_structure())
+            self._output_csv_nl(
+                self._task_specific.Automark.get_output_checks_structure())
             self._create_new_feedback_document()
 
-    #probably won't work for Windows
     def _unzip_submission(self, student_dir):
-        #form unzip command
-        #cmd = ['unzip', '-q', '-o', '-d', student_dir + '/', student_dir + '/*.zip']
-        #sys_process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #std_out = sys_process.communicate()
         archive_file = ''
         for check_dir, _, file in os.walk(student_dir):
             if '__MACOSX' not in check_dir.split('/'):
@@ -122,36 +124,49 @@ class BatchMark:
 
     def _create_new_feedback_document(self):
         print
-        #marker_directory = os.path.dirname(os.path.realpath(__file__))+'/'+self._marker_name
         for student_dir, _, file in os.walk(self._marking_dir):
             student_dir_name = os.path.relpath(student_dir, self._marking_dir)
 
             #print student_dir
-            if (student_dir_name is not '.') and (student_dir_name in self._name_map):
+            if (student_dir_name is not '.') and (
+                    student_dir_name in self._name_map):
                 print 'Student: {}'.format(student_dir_name)
-                student_name = self._name_map[student_dir_name][0] + ' ' + self._name_map[student_dir_name][1]
+                student_name = self._name_map[student_dir_name][0] \
+                    + ' ' + self._name_map[student_dir_name][1]
                 self._unzip_submission(student_dir)
                 java_path = self._mark(student_dir)
                 if java_path == '':
                     print 'No java file'
-                    self._write_student_name_to_document(student_dir, student_dir_name, student_name)
+                    self._write_student_name_to_document(
+                        student_dir, student_dir_name, student_name)
                 else:
                     #print 'file: {}'.format(java_path)
-                    marks = self._task_specific.Automark(java_path, 'credentials.txt', self._buid_dir)
-                    self._write_details_to_document(student_dir, student_dir_name, student_name, marks)
-                    self._write_comments_to_document(student_dir, student_dir_name, marks)
-                    self._output_csv_co([student_dir_name, student_name])
-                    self._output_csv_co(marks.get_scores())
-                    self._output_csv_co(marks.get_internal_stats())
-                    self._output_csv_nl(marks.get_output_checks())
+                    marks = self._task_specific.Automark(
+                        java_path, 'credentials.txt', self._buid_dir)
+                    self._write_details_to_document(
+                        student_dir, student_dir_name, student_name, marks)
+                    self._write_comments_to_document(
+                        student_dir, student_dir_name, marks)
+                    self._output_csv_co(
+                        [student_dir_name, student_name])
+                    self._output_csv_co(
+                        marks.get_scores())
+                    self._output_csv_co(
+                        marks.get_internal_stats())
+                    self._output_csv_nl(
+                        marks.get_output_checks())
 
                 #just do something extra
                 #self._unzip_submission(student_dir)
 
-    def _write_details_to_document(self, student_dir, student_dir_name, student_name, marks):
+    def _write_details_to_document(
+            self, student_dir, student_dir_name, student_name, marks):
         #default cell for student's firstname lastname
-        filename = self._feedback_doc_name.replace('username', student_dir_name)
-        self._feedback_document.paragraphs[0].text = self._feedback_document.paragraphs[0].text.replace('<task>', str(self._task))
+        filename = self._feedback_doc_name.replace(
+            'username', student_dir_name)
+        self._feedback_document.paragraphs[0].text = \
+            self._feedback_document.paragraphs[0].text.replace(
+            '<task>', str(self._task))
         self._feedback_document.tables[0].cell(1,0).text = student_name
         self._feedback_document.tables[0].cell(1,1).text = student_dir_name
         #self._feedback_document.tables[0].cell(1,2).text = self._marker_name
@@ -170,26 +185,37 @@ class BatchMark:
         if execution_score > 4:
             efficient_score = 1
             execution_score -= 1
-        self._feedback_document.tables[2].cell((2 + int(execution_score)), 2).text = '{:g}'.format(execution_score)
-        self._feedback_document.tables[2].cell(9, 2).text = str(indentation_score)
-        self._feedback_document.tables[2].cell(10, 2).text = str(variables_score)
-        self._feedback_document.tables[2].cell(11, 2).text = str(efficient_score)
-        self._feedback_document.tables[2].cell(13 + int(comment_score), 2).text = str(comment_score)
+        self._feedback_document.tables[2].cell(
+            (2 + int(execution_score)), 2).text = '{:g}'.format(
+            execution_score)
+        self._feedback_document.tables[2].cell(
+            9, 2).text = str(indentation_score)
+        self._feedback_document.tables[2].cell(
+            10, 2).text = str(variables_score)
+        self._feedback_document.tables[2].cell(
+            11, 2).text = str(efficient_score)
+        self._feedback_document.tables[2].cell(
+            13 + int(comment_score), 2).text = str(comment_score)
 
-        self._feedback_document.tables[2].cell(16, 2).text = '{:g}'.format(total_score)
+        self._feedback_document.tables[2].cell(
+            16, 2).text = '{:g}'.format(total_score)
         self._feedback_document.save(student_dir+'/../'+filename)
 
-    def _write_student_name_to_document(self, student_dir, student_dir_name, student_name):
+    def _write_student_name_to_document(
+        self, student_dir, student_dir_name, student_name):
         #default cell for student's firstname lastname
-        filename = self._feedback_doc_name.replace('username', student_dir_name)
+        filename = self._feedback_doc_name.replace(
+            'username', student_dir_name)
         self._feedback_document.tables[0].cell(1,0).text = student_name
         self._feedback_document.tables[0].cell(1,1).text = student_dir_name
         self._feedback_document.tables[0].cell(1,2).text = self._marker_name
         self._feedback_document.save(student_dir+'/../'+filename)
         #print student_dir+'/'+filename
 
-    def _write_comments_to_document(self, student_dir, student_dir_name, marks):
-        filename = os.path.basename(self._feedback_doc_name).replace('username', student_dir_name)
+    def _write_comments_to_document(
+            self, student_dir, student_dir_name, marks):
+        filename = os.path.basename(
+            self._feedback_doc_name).replace('username', student_dir_name)
 
         feedback_document = Document(student_dir+'/../'+filename)
         feedback_document.add_heading('Program Comments', 2)
@@ -237,16 +263,21 @@ class BatchMark:
                 if comment[0] == line_num:
                     highlight = True
             if highlight:
-                feedback_document.add_paragraph(str(line_num) + '\t: ' + line_encoded, style='CodeChunkHighlight')
+                feedback_document.add_paragraph(
+                    str(line_num) + '\t: ' + \
+                    line_encoded, style='CodeChunkHighlight')
                 for comment in comments:
                     if comment[0] == line_num:
-                        feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
+                        feedback_document.add_paragraph(
+                            '\t  ' + comment[1], style='CodeChunkComment')
             else:
-                feedback_document.add_paragraph(str(line_num) + '\t: ' + line_encoded, style='CodeChunk')
+                feedback_document.add_paragraph(
+                    str(line_num) + '\t: ' + line_encoded, style='CodeChunk')
             line_num += 1
         for comment in comments:
             if comment[0] == 0:
-                feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
+                feedback_document.add_paragraph(
+                    '\t  ' + comment[1], style='CodeChunkComment')
 
         feedback_document.save(student_dir+'/../'+filename)
 
@@ -262,7 +293,8 @@ class BatchMark:
                 self._name_map[username]=[firstname, lastname]
 
             elif self._marking_sheet.row_values(i).count('Username') is 1:
-                username_index = self._marking_sheet.row_values(i).index('Username')
+                username_index = self._marking_sheet.row_values(i).index(
+                    'Username')
                 is_constructing_name_map = True
 
 # Task number
@@ -274,23 +306,43 @@ class BatchMark:
 # Summary output (optional)
 
 start = time.time()
-parser = argparse.ArgumentParser(description='Batch marker for 4001COMP Java programming.')
+parser = argparse.ArgumentParser(
+    description='Batch marker for 4001COMP Java programming.')
 
 # Required parameters
-parser.add_argument('task', metavar='TASK', type=int, help='Task number (e.g. 1)')
-parser.add_argument('workdir', metavar='WORK', type=str, help='Folder containing students\' folders (e.g. ./DLJ)')
+parser.add_argument(
+    'task', metavar='TASK', type=int, help='Task number (e.g. 1)')
+parser.add_argument(
+    'workdir', metavar='WORK', type=str, 
+    help='Folder containing students\' folders (e.g. ./DLJ)')
 
 # Optional parameters
-parser.add_argument('-i', '--initials', metavar='INITIALS', type=str, help='Marker\'s initials (default Master)', default='Master')
-parser.add_argument('-b', '--builddir', metavar='BUILD', type=str, help='Folder to output build files to (default ./build)', default='./build')
-parser.add_argument('-t', '--template', metavar='TEMPLATE', type=str, help='Word feedback sheeet template (default ./feedback_username.docx)', default='./feedback_username.docx')
-parser.add_argument('-d', '--details', metavar='DETAILS', type=str, help='Excel student details list (default ./4001COMP Marking 2014-15.xlsx)', default='./4001COMP Marking 2014-15.xlsx')
+parser.add_argument(
+    '-i', '--initials', metavar='INITIALS', type=str, 
+    help='Marker\'s initials (default Master)', default='Master')
+parser.add_argument(
+    '-b', '--builddir', metavar='BUILD', type=str, 
+    help='Folder to output build files to (default ./build)', 
+    default='./build')
+parser.add_argument(
+    '-t', '--template', metavar='TEMPLATE', type=str, 
+    help='Word feedback sheeet template (default ./feedback_username.docx)', 
+    default='./feedback_username.docx')
+parser.add_argument(
+    '-d', '--details', metavar='DETAILS', type=str, 
+    help='Excel student list (default ./4001COMP Marking 2014-15.xlsx)', 
+    default='./4001COMP Marking 2014-15.xlsx')
 
-parser.add_argument('-s', '--summary', metavar='SUMMARY', type=str, help='Summary of marks as a CSV file (default ./summary.csv)', default='./summary.csv')
+parser.add_argument(
+    '-s', '--summary', metavar='SUMMARY', type=str, 
+    help='Summary of marks as a CSV file (default ./summary.csv)', 
+    default='./summary.csv')
 
 # Apply these arguments
 args = parser.parse_args()
-batchmark = BatchMark(args.task, args.workdir, args.initials, args.builddir, args.template, args.details, args.summary)
+batchmark = BatchMark(
+    args.task, args.workdir, args.initials, args.builddir, args.template, 
+    args.details, args.summary)
 batchmark.go()
 
 end = time.time()

@@ -34,7 +34,8 @@ class ExecCode:
     # return error, status, result
     
     # getSubmissionDetails(withSource, withOutput, withStderr, withCmpinfo)
-    # return time, date, status, result, memory, signal, source, input, output, stderr, cmpinfo
+    # return time, date, status, result, memory, signal, source, input, 
+    # output, stderr, cmpinfo
 
     def __init__(self, tempfolder, classname):
         'Create a new instane of ExecCode(tempfolder)'
@@ -44,7 +45,8 @@ class ExecCode:
         self._tempsourceleaf = classname + '.java'
 
     # This doesn't confirm to PEP 8, but has been left to match the ideone API
-    def createSubmission(self, user, password, sourceCode, language, input, run, private):
+    def createSubmission(
+            self, user, password, sourceCode, language, input, run, private):
         'Create a new piece of code to be compiled and executed'
         # Store the persistent info
         self._sourceCode = sourceCode
@@ -58,16 +60,19 @@ class ExecCode:
         if not os.path.exists(self._tempfolder + '/uk'):
             shutil.copytree('java/uk', self._tempfolder + '/uk')
 
-        # Create the temporary source file to build based on the source code provided
+        # Create the temporary source file to build based on the source code 
+        # provided
         self._tempsource = os.path.join(self._tempfolder, self._tempsourceleaf)
         ExecCode._tidy_up(self._tempfolder)
         with open(self._tempsource, 'w') as file:
             file.write(sourceCode)
 
         # Set up details of the submission in the sub-thread
-        self._submission = self.Submission(self._tempfolder, self._tempsource, self._classname, input)
+        self._submission = self.Submission(
+            self._tempfolder, self._tempsource, self._classname, input)
         self._status = 1
-        # Spawn the sub-thread to perform compilation and execution of the submission
+        # Spawn the sub-thread to perform compilation and execution of the 
+        # submission
         self._submission.start()
         status = {'item': [Status('error', 'OK'), Status('link', 0)]}
 
@@ -77,18 +82,23 @@ class ExecCode:
     def getSubmissionStatus(self, user, password, link):
         'Get the status of the code submission'
         if self._status == 0:
-            # The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
-            status = {'item': [Status('error', 'OK'), Status('status', -1), Status('result', 0)]}
+            # The compilation/execution sub-thread hasn't been spawned yet, 
+            # so we construct the response ourselves
+            status = {'item': [Status('error', 'OK'), Status('status', -1), 
+                Status('result', 0)]}
         else:
             # Get the response from the compilation/executionsub-thread
             status = self._submission._get_submission_status()
         return status
 
     # This doesn't confirm to PEP 8, but has been left to match the ideone API
-    def getSubmissionDetails(self, user, password, link, withSource, withInput, withOutput, withStderr, withCmpinfo):
+    def getSubmissionDetails(
+            self, user, password, link, withSource, withInput, withOutput, 
+            withStderr, withCmpinfo):
         'Get detailed information about a submission compilation and execution'
         if self._status == 0:
-            # The compilation/execution sub-thread hasn't been spawned yet, so we construct the response ourselves
+            # The compilation/execution sub-thread hasn't been spawned yet, 
+            # so we construct the response ourselves
             details = {'item': []}
             details['item'].append(Status('error', 'OK'))
             details['item'].append(Status('time', 0))
@@ -107,7 +117,8 @@ class ExecCode:
                 details['item'].append(Status('cmpinfo', ''))
         else:
             # Get the response from the compilation/executionsub-thread
-            details = self._submission.get_submission_details(withSource, withInput, withOutput, withStderr, withCmpinfo)
+            details = self._submission.get_submission_details(
+                withSource, withInput, withOutput, withStderr, withCmpinfo)
         details['item'].append(Status('date', self._date))
         if withSource:
             details['item'].append(Status('source', self._sourceCode))
@@ -115,7 +126,8 @@ class ExecCode:
 
     @staticmethod
     def get_value(response, key):
-        'Helper function to extract a value from the return data for the given key'
+        'Helper function to extract a value from the return data for the '
+        'given key'
         value = ''
         # Find the item with the appropriate key
         for item in response['item']:
@@ -135,7 +147,8 @@ class ExecCode:
         elif status == 3:
             description = 'Running'
 
-    #http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    # From http://stackoverflow.com/questions/377017/test-if-executable-
+    # exists-in-python
     @staticmethod
     def _which(program):
         'Check whether a given executable exists'
@@ -176,7 +189,8 @@ class ExecCode:
 
     import threading
     class Submission(threading.Thread):
-        'Threading class to allow compilation and execution in parallel with other tasks'
+        'Threading class to allow compilation and execution in parallel with '
+        'other tasks'
         def __init__(self, tempfolder, tempsource, classname, input):
             'Initialise the thread'
             # Set up the initial variable values that the thread needss
@@ -200,9 +214,11 @@ class ExecCode:
         def run(self):
             'The thread entry point'
             # Compile the source file
-            self._compile_result = self._compile_source(self._tempfolder, self._tempsource)
+            self._compile_result = self._compile_source(
+                self._tempfolder, self._tempsource)
             if self._compile_result[0] != 0:
-                # The compilation failed, so just return the output from the compilation
+                # The compilation failed, so just return the output from the 
+                # compilation
                 self._cmpinfo = self._compile_result[1]
                 self._set_submission_status('OK', 0, 11)
             else:
@@ -210,7 +226,8 @@ class ExecCode:
                 self._cmpinfo = ''
                 self._set_submission_status('OK', 3, 0)
                 # Execute the resulting Java class file
-                self._exec_result = self._execute(self._tempfolder, self._classname, self._input)
+                self._exec_result = self._execute(
+                    self._tempfolder, self._classname, self._input)
                 # Capture the returned output from the execution
                 self._output = self._exec_result[1]
                 self._stderr = self._exec_result[2]
@@ -227,7 +244,8 @@ class ExecCode:
 
         def _set_submission_status(self, error, status, result):
             'For internal use. Sets the status info for a given submssion.'
-            # Ensure only one thread can read/write the details simultaneously by acquring a lock
+            # Ensure only one thread can read/write the details simultaneously 
+            # by acquring a lock
             self._update_status.acquire()
             # Set the details
             self._error = error
@@ -237,36 +255,50 @@ class ExecCode:
             self._update_status.release()
 
         # Status
-        # < 0 - waiting for compilation - the submission awaits execution in the queue
+        # < 0 - waiting for compilation - the submission awaits execution 
+        #       in the queue
         #   0 - done - the program has finished
         #   1 - compilation - the program is being compiled
         #   3 - running - the program is being executed
         
         # Result
-        #   0 - not running - the submission has been created with run parameter set to false
-        #  11 - compilation error - the program could not be executed due to compilation error
-        #  12 - runtime error - the program finished because of the runtime error, for example: division by zero, array index out of bounds, uncaught exception
-        #  13 - time limit exceeded - the program didn't stop before the time limit
+        #   0 - not running - the submission has been created with run 
+        #       parameter set to false
+        #  11 - compilation error - the program could not be executed due to 
+        #       compilation error
+        #  12 - runtime error - the program finished because of the runtime 
+        #       error, for example: division by zero, array index out of 
+        #       bounds, uncaught exception
+        #  13 - time limit exceeded - the program didn't stop before the time 
+        #       limit
         #  15 - success - everything went ok
-        #  17 - memory limit exceeded - the program tried to use more memory than it is allowed to
-        #  19 - illegal system call - the program tried to call illegal system function
-        #  20 - internal error - some problem occurred; try to submit the program again
+        #  17 - memory limit exceeded - the program tried to use more memory 
+        #       than it is allowed to
+        #  19 - illegal system call - the program tried to call illegal 
+        #       system function
+        #  20 - internal error - some problem occurred; try to submit the 
+        #       program again
 
         def _get_submission_status(self):
             'For internal use. Gets status info about a given submssion.'
-            # Ensure only one thread can read/write the details simultaneously by acquring a lock
+            # Ensure only one thread can read/write the details simultaneously 
+            # by acquring a lock
             self._update_status.acquire()
             # Structure the data appropriately
-            status = {'item': [Status('error', self._error), Status('status', self._status), Status('result', self._result)]}
+            status = {'item': [Status('error', self._error), Status(
+                'status', self._status), Status('result', self._result)]}
             # Release the lock
             self._update_status.release()
             return status
 
-        def get_submission_details(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
+        def get_submission_details(
+                self, withSource, withInput, withOutput, withStderr, 
+                withCmpinfo):
             'For internal use. Gets details of a completed submssion.'
             details = {'item': []}
             details['item'].append(Status('error', self._error))
-            details['item'].append(Status('time', (self._time_end - self._time_start)))
+            details['item'].append(Status('time', (
+                self._time_end - self._time_start)))
             details['item'].append(Status('status', self._status))
             details['item'].append(Status('result', self._result))
             details['item'].append(Status('memory', 0))
@@ -295,7 +327,11 @@ class ExecCode:
                 # The Java compiler is present
                 self._set_submission_status('OK', 1, 0)
                 # Execuate the compilation as a subprocess
-                program = Popen(['javac', '-classpath', tempfolder, '-sourcepath', tempfolder, '-d', tempfolder, tempsource], shell=False, cwd='.', stderr=STDOUT, stdin=PIPE, stdout=PIPE)
+                program = Popen(
+                    ['javac', '-classpath', tempfolder, '-sourcepath', 
+                    tempfolder, '-d', tempfolder, tempsource], 
+                    shell=False, cwd='.', 
+                    stderr=STDOUT, stdin=PIPE, stdout=PIPE)
                 # Collect any outputs from the compilation process
                 output = program.stdout.read()
                 program.communicate()
@@ -319,9 +355,14 @@ class ExecCode:
                 # The Java VM is present
                 self._time_start = time.time()
                 # Execute the compiled code as a subprocess
-                program = Popen(['java', classname], shell=False, cwd=tempfolder, bufsize=1, stderr=PIPE, stdin=PIPE, stdout=PIPE, close_fds=ON_POSIX)
+                program = Popen(
+                    ['java', classname], shell=False, cwd=tempfolder, 
+                    bufsize=1, 
+                    stderr=PIPE, stdin=PIPE, stdout=PIPE, close_fds=ON_POSIX)
                 output_queue = Queue()
-                output_collector = ExecCode.threading.Thread(target=ExecCode.Submission._enqueue_output, args=(program.stdout, output_queue))
+                output_collector = ExecCode.threading.Thread(
+                    target=ExecCode.Submission._enqueue_output, 
+                    args=(program.stdout, output_queue))
                 output_collector.daemon = True
                 output_collector.start()
                 # Pass the input to the running code
@@ -357,7 +398,8 @@ class ExecCode:
                 self._time_end = time.time()
             return [result, output.decode("utf-8"), error.decode("utf-8")]
 
-        # http://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
+        # From http://stackoverflow.com/questions/375427/non-blocking-
+        # read-on-a-subprocess-pipe-in-python
         @staticmethod
         def _enqueue_output(out, queue):
                 for line in iter(out.readline, b''):
@@ -367,7 +409,8 @@ class ExecCode:
 
 #program = ExecCode('build', 'CourseworkTask1')
 #sourcecode = ''
-#with open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
+#with open('/home/flypig/Documents/LJMU/Projects/AutoMarking'
+#       '/automark/DLJ/cmpgyate/temp.java') as file:
 #    sourcecode = file.read()
 #program.createSubmission('', '', sourcecode, 11, '10\n11\n12\n', True, True)
 #status = -1;
@@ -378,7 +421,8 @@ class ExecCode:
 #    response = program.getSubmissionStatus('', '', '')
 #    status = ExecCode.get_value(response, 'status')
 #    print ExecCode.check_submissions_status (status)
-#details = program.getSubmissionDetails('', '', '', True, True, True, True, True)
+#details = program.getSubmissionDetails('', '', '', True, True, True, 
+#   True, True)
 #print ExecCode.get_value(details, 'output')
 
 

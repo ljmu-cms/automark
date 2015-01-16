@@ -64,13 +64,17 @@ class Automark(automark.Automark):
             output_score += 1
             output_check[0] = True
         else:
-            execution_comments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correct_volume)
+            execution_comments += (
+                'Volume calculated incorrectly '
+                '(should be {:d} for these inputs).\n').format(correct_volume)
 
         if concat_found:
             output_score += 1
             output_check[1] = True
         else:
-            execution_comments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correct_concat)
+            execution_comments += (
+                'Number strings concatenated incorrectly '
+                '(should be {} for these inputs).\n').format(correct_concat)
 
         return [output_score, execution_comments, output_check]
 
@@ -88,7 +92,8 @@ class Automark(automark.Automark):
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
+        result = comments.check_comment_quality(
+            self._program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
         comment_score = result[0]
         self._comment_gap_average = result[1]
         self._comment_gap_sd = result[2]

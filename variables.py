@@ -1,4 +1,5 @@
 #!/usr/bin/env python 
+# vim: et:ts=4:textwidth=80
 """
 automark
 
@@ -29,19 +30,24 @@ def check_variable_name_quality(program, threshold):
 				variable_short += 1
 				strike += 1
 				if (strike == threshold):
-					error_list.append([variable[1], 'Use variable names that represent what they\'re being used for'])
+					error_list.append(
+					    [variable[1], 'Use variable names that represent '
+					    'what they\'re being used for'])
 			if re.search(r'\d+', name) != None:
 				if int(re.search(r'\d+', name).group()) > 0:
 					variable_enumeration += 1
 					strike += 1
 					if (strike == threshold):
-						error_list.append([variable[1], 'Avoid using sequentially numbered variables names'])
+						error_list.append(
+						    [variable[1], 'Avoid using sequentially '
+						    'numbered variables names'])
 	variables_score = 1
 	if strike >= threshold:
 		variables_score = 0
 	return [variables_score, variable_short, variable_enumeration, error_list]
 
-# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
 class Variable_Visitor(model.Visitor):
 	def __init__(self, verbose=False):
 		super(Variable_Visitor, self).__init__()
@@ -49,7 +55,11 @@ class Variable_Visitor(model.Visitor):
 
 	def leave_VariableDeclaration(self, element):
 		#msg = 'Variable type ({}); name ({}); line no ({})'
-		#print msg.format(element.type, element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno)
-		self.variables.append([element.variable_declarators[0].variable.name, element.variable_declarators[0].variable.lineno])
+		#print msg.format(
+		#   element.type, element.variable_declarators[0].variable.name, 
+		#   element.variable_declarators[0].variable.lineno)
+		self.variables.append(
+		    [element.variable_declarators[0].variable.name, 
+		    element.variable_declarators[0].variable.lineno])
 		return True
 

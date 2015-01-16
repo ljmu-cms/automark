@@ -51,7 +51,8 @@ def check_indentation(program, thresholdlower, thresholdupper):
     indent_errors.append(_check_indentation_type(program, '   ', '\t'))
     indent_errors.append(_check_indentation_type(program, '    ', '\t'))
 
-    min_error, min_error_index = min((val, idx) for (idx, val) in enumerate(indent_errors))
+    min_error, min_error_index = min((val, idx) for (idx, val) in enumerate(
+        indent_errors))
     indentation_errors = min_error[0]
 
     error_list = []
@@ -62,7 +63,8 @@ def check_indentation(program, thresholdlower, thresholdupper):
         indentatino_score += 0.5
 
     if indentation_errors > thresholdlower:
-        error_list.append([program.line_number[min_error[1]], 'Indentation errors'])
+        error_list.append(
+            [program.line_number[min_error[1]], 'Indentation errors'])
 
     return [indentation_errors, indentatino_score, error_list]
 

@@ -16,7 +16,9 @@ import plyjext.parser as plyj
 import os
 import collections
 
-Program = collections.namedtuple('Program', ['program', 'program_lines', 'full_program', 'program_tree', 'line_number', 'line_character_start'])
+Program = collections.namedtuple(
+    'Program', ['program', 'program_lines', 'full_program', 'program_tree', 
+    'line_number', 'line_character_start'])
 
 def load_source(filename):
     # Load in the program from file
@@ -37,7 +39,9 @@ def load_source(filename):
                 if (not found_main) and (line.find('public class') >= 0):
                     line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
                     found_main = True
-                line = re.sub(r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', line)
+                line = re.sub(
+                    r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', 
+                    line)
                 if not (line.isspace() or (len(line) == 0)):
                     program += line
                     line_number.append(lines_read)
@@ -53,7 +57,9 @@ def load_source(filename):
     parser = plyj.Parser()
     program_tree = parser.parse_string(full_program)
 
-    program_structure = Program(program, program_lines, full_program, program_tree, line_number, line_character_start)
+    program_structure = Program(
+        program, program_lines, full_program, program_tree, line_number, 
+        line_character_start)
 
     return program_structure
 

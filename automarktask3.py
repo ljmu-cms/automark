@@ -37,8 +37,12 @@ class Automark(automark.Automark):
         # Replace the input file with "input.txt" so we can control it
         filename = find_file_input.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self._program_structure.program)
-            self._program_structure = self._program_structure._replace(program = transformed)
+            transformed = re.sub(
+                r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + 
+                ')(\s*\))', r'\1"input.txt"\3', 
+                self._program_structure.program)
+            self._program_structure = self._program_structure._replace(
+                program = transformed)
 
         # Establish the name of the output file
         find_file_output = InstanceCreationParam_Visitor('PrintWriter')
@@ -48,8 +52,12 @@ class Automark(automark.Automark):
         # Replace the output file with "output.txt" so we can control it
         filename = find_file_output.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self._program_structure.program)
-            self._program_structure = self._program_structure._replace(program = transformed)
+            transformed = re.sub(
+                r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + 
+                ')(\s*\))', r'\1"output.txt"\3', 
+                self._program_structure.program)
+            self._program_structure = self._program_structure._replace(
+                program = transformed)
 
         # Generate the input file
         journey_costs = []
@@ -77,7 +85,8 @@ class Automark(automark.Automark):
             journey_costs.append(journey_cost)
 
         # Find median journey cost
-        recommended_max = int ((journey_costs[int (num_of_ships / 2)] + journey_costs[int (num_of_ships / 2) + 1]) / 2.0)
+        recommended_max = int ((journey_costs[int (num_of_ships / 2)] + 
+            journey_costs[int (num_of_ships / 2) + 1]) / 2.0)
 
         if not os.path.exists(self._build_dir):
             os.makedirs(self._build_dir)
@@ -88,9 +97,11 @@ class Automark(automark.Automark):
 
         stdin = '{:d}\n'.format(recommended_max)
 
-        self._extra_program_input.append(['Input from input.txt', input_contents])
+        self._extra_program_input.append(
+            ['Input from input.txt', input_contents])
 
-        return [stdin, num_of_ships, ship_ids, journey_ids, journey_costs, recommended_max]
+        return [stdin, num_of_ships, ship_ids, journey_ids, journey_costs, 
+            recommended_max]
 
     def check_output_correctness(self, output, inputs):
         num_of_ships = inputs[1]
@@ -106,18 +117,22 @@ class Automark(automark.Automark):
         # Search for ship names and ensure they're in the right order
         ship_ids_output_dup = re.findall(r'Boat\d\d\d\dID', output)
         # Remove duplicates but retain ordering
-        # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+        # From http://stackoverflow.com/questions/480214/how-do-you-remove-
+        # duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        ship_ids_output = [ x for x in ship_ids_output_dup if not (x in seen or seen_add(x))]
+        ship_ids_output = [ x for x in ship_ids_output_dup if not (
+            x in seen or seen_add(x))]
 
         # Search for journey names and ensure they're in the right order
         journey_ids_output_dup = re.findall(r'Journey\d\d\d\dID', output)
         # Remove duplicates but retain ordering
-        # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+        # From http://stackoverflow.com/questions/480214/how-do-you-remove-
+        # duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        journey_ids_output = [ x for x in journey_ids_output_dup if not (x in seen or seen_add(x))]
+        journey_ids_output = [ x for x in journey_ids_output_dup if not (
+            x in seen or seen_add(x))]
 
         #print ship_ids_output
         #print ship_ids
@@ -149,9 +164,11 @@ class Automark(automark.Automark):
         console_ships_match = ships_match or journeys_match
 
         if console_ships_match:
-            execution_comments += 'You\'ve correctly output all the ship journeys to the console.\n'
+            execution_comments += ("You've correctly output all the ship "
+                "journeys to the console.\n")
         else:
-            execution_comments += 'You didn\'t output all of the journeys correctly to the console.\n'
+            execution_comments += ("You didn't output all of the journeys "
+            "correctly to the console.\n")
 
         correct_cost_count = 0
         correct_legality_count = 0
@@ -159,7 +176,8 @@ class Automark(automark.Automark):
         if console_ships_match:
             # Check the journey cost and viability
             journey_costs_int = [int(x) for x in journey_costs]
-            correct_cost_count = Automark._check_existence_in_sections(output, sections, journey_costs_int)
+            correct_cost_count = Automark._check_existence_in_sections(
+                output, sections, journey_costs_int)
             sections.append('defenestrate')
             section = 0
             current = sections[section]
@@ -173,53 +191,76 @@ class Automark(automark.Automark):
                     current = next
                     next = sections[section + 1]
                 legal = Automark._check_legal(line)
-                if legal[0] and (legal[1] == (journey_costs[section] <= recommended_max)):
+                if legal[0] and (legal[1] == (
+                        journey_costs[section] <= recommended_max)):
                     legal_found = True;
 
             if legal_found:
                 correct_legality_count += 1
 
         if correct_cost_count == num_of_ships:
-            execution_comments += 'You correctly calculated and output all of the journey costs to the console.\n'
+            execution_comments += ('You correctly calculated and output all '
+                'of the journey costs to the console.\n')
         else:
-            execution_comments += 'Not all of the costs were correctly calculated and output to the console ({:d} out of {:d})\n'.format(correct_cost_count, num_of_ships)
+            execution_comments += ('Not all of the costs were correctly '
+                'calculated and output to the console '
+                '({:d} out of {:d})\n').format(
+                correct_cost_count, num_of_ships)
 
         if correct_legality_count == num_of_ships:
-            execution_comments += 'You correctly determined whether each of the ships was within cost.\n'
+            execution_comments += ('You correctly determined whether each of '
+                'the ships was within cost.\n')
         else:
-            execution_comments += 'You only determined whether the ships were within cosst correctly for {:d} out of the {:d} ships.\n'.format(correct_legality_count, num_of_ships)
+            execution_comments += ('You only determined whether the ships '
+                'were within cosst correctly for '
+                '{:d} out of the {:d} ships.\n').format(
+                correct_legality_count, num_of_ships)
 
         #Establish the list of viable journeys
-        viable_ship_ids = [j for i, j in enumerate(ship_ids) if journey_costs[i] <= recommended_max]
-        viable_journey_ids = [j for i, j in enumerate(journey_ids) if journey_costs[i] <= recommended_max]
-        viable_journey_costs = [i for i in journey_costs if i <= recommended_max]
+        viable_ship_ids = [j for i, j in enumerate(
+            ship_ids) if journey_costs[i] <= recommended_max]
+        viable_journey_ids = [j for i, j in enumerate(
+            journey_ids) if journey_costs[i] <= recommended_max]
+        viable_journey_costs = [
+            i for i in journey_costs if i <= recommended_max]
         viable_ship_num = len(viable_ship_ids)
 
         # Find the highest cost lower than the maxumum recommended
-        highest_index = max(enumerate(viable_journey_costs), key= lambda x: x[1])[0]
+        highest_index = max(enumerate(
+            viable_journey_costs), key= lambda x: x[1])[0]
         highest_ship_id = viable_ship_ids[highest_index]
         highest_journey_id = viable_journey_ids[highest_index]
         highest_journey_cost = viable_journey_costs[highest_index]
 
-        # Find whether the hightest cost below the maximum has been correctly calculated
+        # Find whether the hightest cost below the maximum has been correctly 
+        # calculated
         max_start = len(output_lines) - 1
         max_found = False
         while (not max_found) and (max_start >= 0):
-            if Automark._find_keywords(output_lines[max_start - 1], ['highest', 'expensive', 'maximum']):
+            if Automark._find_keywords(
+                    output_lines[max_start - 1], 
+                    ['highest', 'expensive', 'maximum']):
                 max_found = True
             max_start -= 1
 
         if max_found:
             max_found = False
             for line in output_lines[max_start:]:
-                max_found |= Automark._find_keywords(line, [highest_ship_id, highest_journey_id, '{:.0f}'.format(highest_journey_cost)])
+                max_found |= Automark._find_keywords(
+                    line, [highest_ship_id, highest_journey_id, 
+                    '{:.0f}'.format(highest_journey_cost)])
 
-        execution_comments += 'The maximum recommended journey cost entered by the user was {:d}.\n'.format(recommended_max)
-        execution_comments += 'The most expensive journey within this cost was {} costing {:.1f}.\n'.format(highest_ship_id, highest_journey_cost)
+        execution_comments += ('The maximum recommended journey cost entered '
+            'by the user was {:d}.\n').format(recommended_max)
+        execution_comments += ('The most expensive journey within this cost '
+            'was {} costing {:.1f}.\n').format(
+            highest_ship_id, highest_journey_cost)
         if max_found:
-            execution_comments += 'Your program correctly determined this maximum journey.\n'
+            execution_comments += ('Your program correctly determined this '
+                'maximum journey.\n')
         else:
-            execution_comments += 'Your program didn\'t correctly determine and output this.\n'
+            execution_comments += ('Your program didn\'t correctly determine '
+                'and output this.\n')
 
         #print '************************* STDOUT *************************'
         #print Automark.clean_text(output)
@@ -234,18 +275,22 @@ class Automark(automark.Automark):
         # Search for ship names and ensure they're in the right order
         ship_ids_output_dup = re.findall(r'Boat\d\d\d\dID', file_output)
         # Remove duplicates but retain ordering
-        # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+        # From http://stackoverflow.com/questions/480214/how-do-you-remove-
+        # duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        ship_ids_output = [ x for x in ship_ids_output_dup if not (x in seen or seen_add(x))]
+        ship_ids_output = [ x for x in ship_ids_output_dup if not (
+            x in seen or seen_add(x))]
 
         # Search for journey names and ensure they're in the right order
         journey_ids_output_dup = re.findall(r'Journey\d\d\d\dID', file_output)
         # Remove duplicates but retain ordering
-        # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+        # From http://stackoverflow.com/questions/480214/how-do-you-remove-
+        # duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        journey_ids_output = [ x for x in journey_ids_output_dup if not (x in seen or seen_add(x))]
+        journey_ids_output = [ x for x in journey_ids_output_dup if not (
+            x in seen or seen_add(x))]
 
         viable_ships_match = False
         if viable_ship_ids == ship_ids_output:
@@ -264,19 +309,25 @@ class Automark(automark.Automark):
         file_ships_match = viable_ships_match or viable_journeys_match
 
         if file_ships_match:
-            execution_comments += 'Your program correctly listed the ships within cost in your output file.\n'
+            execution_comments += ('Your program correctly listed the ships '
+                'within cost in your output file.\n')
         else:
-            execution_comments += 'Your program didn\'t correctly list the ships within cost in your output file.\n'
+            execution_comments += ("Your program didn't correctly list the "
+                "ships within cost in your output file.\n")
 
         viable_correct_cost_count = 0
         if file_ships_match:
             viable_journey_costs_int = [int(x) for x in viable_journey_costs]
-            viable_correct_cost_count = Automark._check_existence_in_sections(output, sections, viable_journey_costs_int)
+            viable_correct_cost_count = Automark._check_existence_in_sections(
+                output, sections, viable_journey_costs_int)
 
         if viable_correct_cost_count == viable_ship_num:
-            execution_comments += 'Your program correctly output the costs for these ships.\n'
+            execution_comments += ('Your program correctly output the costs '
+                'for these ships.\n')
         else:
-            execution_comments += 'Your program only correctly output the costs for {:d} out of {:d} of these ships.\n'.format(viable_correct_cost_count, len(viable_journey_costs))
+            execution_comments += ('Your program only correctly output the '
+                'costs for {:d} out of {:d} of these ships.\n').format(
+                viable_correct_cost_count, len(viable_journey_costs))
 
         output_score = 0
 
@@ -298,9 +349,14 @@ class Automark(automark.Automark):
         if viable_correct_cost_count == viable_ship_num:
             output_score += 0.2
 
-        self._extra_program_output.append(['Output to wagedaily.txt', file_output])
+        self._extra_program_output.append(
+            ['Output to wagedaily.txt', file_output])
 
-        output_check = [console_ships_match, (correct_cost_count == num_of_ships), (correct_legality_count == num_of_ships), max_found, file_ships_match, (viable_correct_cost_count == viable_ship_num)]
+        output_check = [console_ships_match, 
+            (correct_cost_count == num_of_ships), 
+            (correct_legality_count == num_of_ships), 
+            max_found, file_ships_match, 
+            (viable_correct_cost_count == viable_ship_num)]
 
         return [output_score, execution_comments, output_check]
 
@@ -318,7 +374,8 @@ class Automark(automark.Automark):
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
+        result = comments.check_comment_quality(
+            self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
         comment_score = result[0]
         self._comment_gap_average = result[1]
         self._comment_gap_sd = result[2]
@@ -327,8 +384,10 @@ class Automark(automark.Automark):
 
     @staticmethod
     def _check_legal(line):
-        legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 'lower', 'acceptable']
-        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
+        legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 
+            'lower', 'acceptable']
+        illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 
+            'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
 
         found_legal = False
         legal_result = False
@@ -379,7 +438,8 @@ class Automark(automark.Automark):
 
         return correct_count
     
-# This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
 class InstanceCreationParam_Visitor(model.Visitor):
     def __init__(self, class_name, param_num=0, verbose=False):
         super(InstanceCreationParam_Visitor, self).__init__()
