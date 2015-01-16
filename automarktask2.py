@@ -24,19 +24,19 @@ import execcode
 class Automark(automark.Automark):
     output_checks = 5
 
-    def __init__(self, filename, credentialsFile, build_dir):
-        automark.Automark.__init__(self, filename, credentialsFile, build_dir)
+    def __init__(self, filename, credentials_file, build_dir):
+        automark.Automark.__init__(self, filename, credentials_file, build_dir)
 
     def setup_inputs(self):
         # Establish the name of the input file
-        findFileInput = FileReader_Visitor()
-        if self.programStructure.programTree != None:
-            self.programStructure.programTree.accept(findFileInput)
+        find_file_input = FileReader_Visitor()
+        if self.program_structure.program_tree != None:
+            self.program_structure.program_tree.accept(find_file_input)
 
         # Replace the input file with "input.txt" so we can control it
-        if len(findFileInput.filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(findFileInput.filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.programStructure.program)
-            self.programStructure = self.programStructure._replace(program = transformed)
+        if len(find_file_input.filename) > 0:
+            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(find_file_input.filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.program_structure.program)
+            self.program_structure = self.program_structure._replace(program = transformed)
 
         # Generate variables for the input file
         ship_length = random.randint(20, 100)
@@ -51,12 +51,12 @@ class Automark(automark.Automark):
         if not os.path.exists(self.build_dir):
             os.makedirs(self.build_dir)
 
-        inputContents = '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n'.format(ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight)
-        fileToWrite = os.path.join(self.build_dir, "input.txt")
-        with open(fileToWrite, 'w') as inputFile:
-            inputFile.write(inputContents)
+        input_contents = '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n'.format(ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight)
+        file_to_write = os.path.join(self.build_dir, "input.txt")
+        with open(file_to_write, 'w') as input_file:
+            input_file.write(input_contents)
 
-        stdin = inputContents
+        stdin = input_contents
 
         return [stdin, ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight]
 
@@ -70,8 +70,8 @@ class Automark(automark.Automark):
         container_weight = inputs[7]
         ship_max_weight = inputs[8]
 
-        outputCheck = [False, False, False, False, False]
-        outputScore = 0
+        output_check = [False, False, False, False, False]
+        output_score = 0
 
         output = re.sub("\n\s*\n*", "\n", output)
         lines = output.splitlines()
@@ -82,7 +82,7 @@ class Automark(automark.Automark):
         container_weight = container_max * container_weight
         legal = (container_weight <= ship_max_weight)
 
-        executionComments = ''
+        execution_comments = ''
 
         ship_volume_found = False
         container_volume_found = False
@@ -128,71 +128,71 @@ class Automark(automark.Automark):
                 found_legal = True
 
         if ship_volume_found:
-            outputScore += 0.2
-            outputCheck[0] = True
-            executionComments += 'You correctly output the ship volume of {:d}.\n'.format(ship_volume)
+            output_score += 0.2
+            output_check[0] = True
+            execution_comments += 'You correctly output the ship volume of {:d}.\n'.format(ship_volume)
         else:
-            executionComments += 'You didn\'t output the correct ship volume of {:d}.\n'.format(ship_volume)
+            execution_comments += 'You didn\'t output the correct ship volume of {:d}.\n'.format(ship_volume)
 
         if container_volume_found:
-            outputScore += 0.7
-            outputCheck[1] = True
-            executionComments += 'You correctly output the container volume of {:d}.\n'.format(container_volume)
+            output_score += 0.7
+            output_check[1] = True
+            execution_comments += 'You correctly output the container volume of {:d}.\n'.format(container_volume)
         else:
-            executionComments += 'You didn\'t output the correct container volume of {:d}.\n'.format(container_volume)
+            execution_comments += 'You didn\'t output the correct container volume of {:d}.\n'.format(container_volume)
 
         if container_max_found:
-            outputScore += 1.9
-            outputCheck[2] = True
-            executionComments += 'You correctly output that the ship could hold {:d} containers.\n'.format(container_max)
+            output_score += 1.9
+            output_check[2] = True
+            execution_comments += 'You correctly output that the ship could hold {:d} containers.\n'.format(container_max)
         else:
-            executionComments += 'You didn\'t output that the ship could hold {:d} containers.\n'.format(container_max)
+            execution_comments += 'You didn\'t output that the ship could hold {:d} containers.\n'.format(container_max)
 
         if container_weight_found:
-            outputScore += 1.0
-            outputCheck[3] = True
-            executionComments += 'You correctly output {:d} as the total weight of the containers.\n'.format(container_weight)
+            output_score += 1.0
+            output_check[3] = True
+            execution_comments += 'You correctly output {:d} as the total weight of the containers.\n'.format(container_weight)
         else:
-            executionComments += 'You didn\'t output the total weight of the containers as {:d}.\n'.format(container_weight)
+            execution_comments += 'You didn\'t output the total weight of the containers as {:d}.\n'.format(container_weight)
 
         if found_legal:
             if legal_result == legal:
-                outputScore += 0.9
-                outputCheck[4] = True
+                output_score += 0.9
+                output_check[4] = True
                 if legal:
-                    executionComments += 'You correctly determined that the ship was safe to sail.\n'
+                    execution_comments += 'You correctly determined that the ship was safe to sail.\n'
                 else:
-                    executionComments += 'You correctly determined that the ship wasn\'t safe to sail.\n'
+                    execution_comments += 'You correctly determined that the ship wasn\'t safe to sail.\n'
             else:
                 if legal:
-                    executionComments += 'You incorrectly said the ship was unsafe to sail.\n'
+                    execution_comments += 'You incorrectly said the ship was unsafe to sail.\n'
                 else:
-                    executionComments += 'You incorrectly said the ship was safe to sail.\n'
+                    execution_comments += 'You incorrectly said the ship was safe to sail.\n'
         else:
-            executionComments += 'You didn\'t output whether the ship was safe to sail.\n'
+            execution_comments += 'You didn\'t output whether the ship was safe to sail.\n'
 
-        return [outputScore, executionComments, outputCheck]
+        return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
-        outputScore = 0
+        output_score = 0
         if execcode.ExecCode.response_check_compiled(result):
-            outputScore += 1.7
-        return outputScore
+            output_score += 1.7
+        return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.programStructure, 1, 14)
-        self.indentationErrors = result[0]
-        indentationScore = result[1]
-        self.errorList.extend(result[2])
-        return indentationScore
+        result = indentation.check_indentation(self.program_structure, 1, 14)
+        self.indentation_errors = result[0]
+        indentation_score = result[1]
+        self.error_list.extend(result[2])
+        return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 2.0, 6.0, 0.08)
-        commentScore = result[0]
-        self.commentGapAverage = result[1]
-        self.commentGapSD = result[2]
-        self.errorList.extend(result[3])
-        return commentScore
+        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
+        comment_score = result[0]
+        self.comment_gap_average = result[1]
+        self.comment_gap_sd = result[2]
+        self.error_list.extend(result[3])
+        return comment_score
 
     @staticmethod
     def _find_keywords(line, words):

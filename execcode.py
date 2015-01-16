@@ -183,38 +183,38 @@ class ExecCode:
             self.error = 'OK'
             self.status = -1
             self.result = 0
-            self.updateStatus = ExecCode.threading.Lock()
+            self.update_status = ExecCode.threading.Lock()
             self.tempfolder = tempfolder
             self.tempsource = tempsource
             self.classname = classname
             self.input = input
             self.cmpinfo = ''
-            self.timeStart = 0
-            self.timeEnd = 0
+            self.time_start = 0
+            self.time_end = 0
             self.date = ''
-            self.compileResult = [0, '']
-            self.execResult = [0, '', '']
+            self.compile_result = [0, '']
+            self.exec_result = [0, '', '']
             self.maxexectime = 3.0
             ExecCode.threading.Thread.__init__(self)
 
         def run(self):
             'The thread entry point'
             # Compile the source file
-            self.compileResult = self._compile_source(self.tempfolder, self.tempsource)
-            if self.compileResult[0] != 0:
+            self.compile_result = self._compile_source(self.tempfolder, self.tempsource)
+            if self.compile_result[0] != 0:
                 # The compilation failed, so just return the output from the compilation
-                self.cmpinfo = self.compileResult[1]
+                self.cmpinfo = self.compile_result[1]
                 self._set_submission_status('OK', 0, 11)
             else:
                 # The compilation was successful
                 self.cmpinfo = ''
                 self._set_submission_status('OK', 3, 0)
                 # Execute the resulting Java class file
-                self.execResult = self._execute(self.tempfolder, self.classname, self.input)
+                self.exec_result = self._execute(self.tempfolder, self.classname, self.input)
                 # Capture the returned output from the execution
-                self.output = self.execResult[1]
-                self.stderr = self.execResult[2]
-                if self.execResult[0] != 0:
+                self.output = self.exec_result[1]
+                self.stderr = self.exec_result[2]
+                if self.exec_result[0] != 0:
                     # The execuation failed, so note the details
                     self._set_submission_status('OK', 0, 12)
                 else:
@@ -228,13 +228,13 @@ class ExecCode:
         def _set_submission_status(self, error, status, result):
             'For internal use. Sets the status info for a given submssion.'
             # Ensure only one thread can read/write the details simultaneously by acquring a lock
-            self.updateStatus.acquire()
+            self.update_status.acquire()
             # Set the details
             self.error = error
             self.status = status
             self.result = result
             # Release the lock
-            self.updateStatus.release()
+            self.update_status.release()
 
         # Status
         # < 0 - waiting for compilation - the submission awaits execution in the queue
@@ -255,30 +255,30 @@ class ExecCode:
         def _get_submission_status(self):
             'For internal use. Gets status info about a given submssion.'
             # Ensure only one thread can read/write the details simultaneously by acquring a lock
-            self.updateStatus.acquire()
+            self.update_status.acquire()
             # Structure the data appropriately
             status = {'item': [Status('error', self.error), Status('status', self.status), Status('result', self.result)]}
             # Release the lock
-            self.updateStatus.release()
+            self.update_status.release()
             return status
 
         def get_submission_details(self, withSource, withInput, withOutput, withStderr, withCmpinfo):
             'For internal use. Gets details of a completed submssion.'
             details = {'item': []}
             details['item'].append(Status('error', self.error))
-            details['item'].append(Status('time', (self.timeEnd - self.timeStart)))
+            details['item'].append(Status('time', (self.time_end - self.time_start)))
             details['item'].append(Status('status', self.status))
             details['item'].append(Status('result', self.result))
             details['item'].append(Status('memory', 0))
-            details['item'].append(Status('signal', self.execResult[0]))
+            details['item'].append(Status('signal', self.exec_result[0]))
             details['item'].append(Status('public', False))
             # Some of the return key-value pairs are optional
             if withInput:
                 details['item'].append(Status('input', self.input))
             if withOutput:
-                details['item'].append(Status('output', self.execResult[1]))
+                details['item'].append(Status('output', self.exec_result[1]))
             if withStderr:
-                details['item'].append(Status('stderr', self.execResult[2]))
+                details['item'].append(Status('stderr', self.exec_result[2]))
             if withCmpinfo:
                 details['item'].append(Status('cmpinfo', self.cmpinfo))
             return details
@@ -317,13 +317,13 @@ class ExecCode:
                 self._set_submission_status('OK', 1, 0)
             else:
                 # The Java VM is present
-                self.timeStart = time.time()
+                self.time_start = time.time()
                 # Execute the compiled code as a subprocess
                 program = Popen(['java', classname], shell=False, cwd=tempfolder, bufsize=1, stderr=PIPE, stdin=PIPE, stdout=PIPE, close_fds=ON_POSIX)
-                outputQueue = Queue()
-                outputCollector = ExecCode.threading.Thread(target=ExecCode.Submission._enqueue_output, args=(program.stdout, outputQueue))
-                outputCollector.daemon = True
-                outputCollector.start()
+                output_queue = Queue()
+                output_collector = ExecCode.threading.Thread(target=ExecCode.Submission._enqueue_output, args=(program.stdout, output_queue))
+                output_collector.daemon = True
+                output_collector.start()
                 # Pass the input to the running code
                 program.stdin.write(input)
                 # Collect any output form the the running code
@@ -334,7 +334,7 @@ class ExecCode:
                 while (result == None) and not self.timelimitexceeded:
                     program.poll()
                     try:
-                        line = outputQueue.get_nowait()
+                        line = output_queue.get_nowait()
                     except Empty:
                         # No output, wait a bit and check again
                         time.sleep(0.1)
@@ -343,7 +343,7 @@ class ExecCode:
                         # We caught some output, so record it
                         output += line
                     # Check how long the program's been running for
-                    exectime = time.time() - self.timeStart
+                    exectime = time.time() - self.time_start
                     if exectime >= self.maxexectime:
                         # Too long!
                         self.timelimitexceeded = True
@@ -354,7 +354,7 @@ class ExecCode:
                 result = program.returncode
                 if result == None:
                     result = 0
-                self.timeEnd = time.time()
+                self.time_end = time.time()
             return [result, output.decode("utf-8"), error.decode("utf-8")]
 
         # http://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
@@ -366,15 +366,15 @@ class ExecCode:
 
 
 #program = ExecCode('build', 'CourseworkTask1')
-#sourceCode = ''
+#sourcecode = ''
 #with open('/home/flypig/Documents/LJMU/Projects/AutoMarking/automark/DLJ/cmpgyate/temp.java') as file:
-#    sourceCode = file.read()
-#program.createSubmission('', '', sourceCode, 11, '10\n11\n12\n', True, True)
+#    sourcecode = file.read()
+#program.createSubmission('', '', sourcecode, 11, '10\n11\n12\n', True, True)
 #status = -1;
-#waitTime = 0
+#wait_time = 0
 #while status != 0:
-#    time.sleep(waitTime)
-#    waitTime = 0.1
+#    time.sleep(wait_time)
+#    wait_time = 0.1
 #    response = program.getSubmissionStatus('', '', '')
 #    status = ExecCode.get_value(response, 'status')
 #    print ExecCode.check_submissions_status (status)

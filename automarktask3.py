@@ -25,306 +25,305 @@ import execcode
 class Automark(automark.Automark):
     output_checks = 6
 
-    def __init__(self, filename, credentialsFile, build_dir):
-        automark.Automark.__init__(self, filename, credentialsFile, build_dir)
+    def __init__(self, filename, credentials_file, build_dir):
+        automark.Automark.__init__(self, filename, credentials_file, build_dir)
 
     def setup_inputs(self):
         # Establish the name of the input file
-        findFileInput = InstanceCreationParam_Visitor('FileReader')
-        if self.programStructure.programTree != None:
-            self.programStructure.programTree.accept(findFileInput)
+        find_file_input = InstanceCreationParam_Visitor('FileReader')
+        if self.program_structure.program_tree != None:
+            self.program_structure.program_tree.accept(find_file_input)
 
         # Replace the input file with "input.txt" so we can control it
-        filename = findFileInput.getParamList()
+        filename = find_file_input.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.programStructure.program)
-            self.programStructure = self.programStructure._replace(program = transformed)
+            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.program_structure.program)
+            self.program_structure = self.program_structure._replace(program = transformed)
 
         # Establish the name of the output file
-        findFileOutput = InstanceCreationParam_Visitor('PrintWriter')
-        if self.programStructure.programTree != None:
-            self.programStructure.programTree.accept(findFileOutput)
+        find_file_output = InstanceCreationParam_Visitor('PrintWriter')
+        if self.program_structure.program_tree != None:
+            self.program_structure.program_tree.accept(find_file_output)
 
         # Replace the output file with "output.txt" so we can control it
-        filename = findFileOutput.getParamList()
+        filename = find_file_output.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self.programStructure.program)
-            self.programStructure = self.programStructure._replace(program = transformed)
+            transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self.program_structure.program)
+            self.program_structure = self.program_structure._replace(program = transformed)
 
         # Generate the input file
-        journeyCosts = []
-        inputContents = ''
-        numOfShips = random.randint(5,9)
-        shipIDs = []
-        journeyIDs = []
-        for ship in range(0, numOfShips):
-            shipID = u'Boat{:d}ID'.format(random.randint(1000,9999))
-            shipIDs.append(shipID)
-            inputContents += '{}\n'.format(shipID)
-            journeyID = u'Journey{:d}ID'.format(random.randint(1000, 9999))
-            journeyIDs.append(journeyID)
-            inputContents += '{}\n'.format(journeyID)
-            journeyLength = random.randint(4, 30)
-            inputContents += '{:d}\n'.format(journeyLength)
-            crewNum = random.randint(1, 10)
-            inputContents += '{:d}\n'.format(crewNum)
-            journeyCost = 0
-            for crewMember in range(0, crewNum):
+        journey_costs = []
+        input_contents = ''
+        num_of_ships = random.randint(5,9)
+        ship_ids = []
+        journey_ids = []
+        for ship in range(0, num_of_ships):
+            ship_id = u'Boat{:d}ID'.format(random.randint(1000,9999))
+            ship_ids.append(ship_id)
+            input_contents += '{}\n'.format(ship_id)
+            journey_id = u'Journey{:d}ID'.format(random.randint(1000, 9999))
+            journey_ids.append(journey_id)
+            input_contents += '{}\n'.format(journey_id)
+            journey_length = random.randint(4, 30)
+            input_contents += '{:d}\n'.format(journey_length)
+            crew_num = random.randint(1, 10)
+            input_contents += '{:d}\n'.format(crew_num)
+            journey_cost = 0
+            for crew_member in range(0, crew_num):
                 rate = random.randint(20, 100) / 2.0
-                inputContents += '{:.1f}\n'.format(rate)
-                journeyCost += rate * journeyLength
-            inputContents += '\n'
-            journeyCosts.append(journeyCost)
+                input_contents += '{:.1f}\n'.format(rate)
+                journey_cost += rate * journey_length
+            input_contents += '\n'
+            journey_costs.append(journey_cost)
 
         # Find median journey cost
-        recommendedMax = int ((journeyCosts[int (numOfShips / 2)] + journeyCosts[int (numOfShips / 2) + 1]) / 2.0)
+        recommended_max = int ((journey_costs[int (num_of_ships / 2)] + journey_costs[int (num_of_ships / 2) + 1]) / 2.0)
 
         if not os.path.exists(self.build_dir):
             os.makedirs(self.build_dir)
 
-        fileToWrite = os.path.join(self.build_dir, "input.txt")
-        with open(fileToWrite, 'w') as inputFile:
-            inputFile.write(inputContents)
+        file_to_write = os.path.join(self.build_dir, "input.txt")
+        with open(file_to_write, 'w') as input_file:
+            input_file.write(input_contents)
 
-        stdin = '{:d}\n'.format(recommendedMax)
+        stdin = '{:d}\n'.format(recommended_max)
 
-        self.extraProgramInput.append(['Input from input.txt', inputContents])
+        self.extra_program_input.append(['Input from input.txt', input_contents])
 
-        return [stdin, numOfShips, shipIDs, journeyIDs, journeyCosts, recommendedMax]
+        return [stdin, num_of_ships, ship_ids, journey_ids, journey_costs, recommended_max]
 
     def check_output_correctness(self, output, inputs):
-        numOfShips = inputs[1]
-        shipIDs = inputs[2]
-        journeyIDs = inputs[3]
-        journeyCosts = inputs[4]
-        recommendedMax = inputs[5]
+        num_of_ships = inputs[1]
+        ship_ids = inputs[2]
+        journey_ids = inputs[3]
+        journey_costs = inputs[4]
+        recommended_max = inputs[5]
 
-        executionComments = ''
-        outputCheck = [False, False, False, False, False, False]
-        outputScore = 0
+        execution_comments = ''
+        output_check = [False, False, False, False, False, False]
+        output_score = 0
 
         # Search for ship names and ensure they're in the right order
-        shipIDsOutput_dup = re.findall(r'Boat\d\d\d\dID', output)
+        ship_ids_output_dup = re.findall(r'Boat\d\d\d\dID', output)
         # Remove duplicates but retain ordering
         # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
+        ship_ids_output = [ x for x in ship_ids_output_dup if not (x in seen or seen_add(x))]
 
         # Search for journey names and ensure they're in the right order
-        journeyIDsOutput_dup = re.findall(r'Journey\d\d\d\dID', output)
+        journey_ids_output_dup = re.findall(r'Journey\d\d\d\dID', output)
         # Remove duplicates but retain ordering
         # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
+        journey_ids_output = [ x for x in journey_ids_output_dup if not (x in seen or seen_add(x))]
 
-        #print shipIDsOutput
-        #print shipIDs
-        #print journeyIDsOutput
-        #print journeyIDs
+        #print ship_ids_output
+        #print ship_ids
+        #print journey_ids_output
+        #print journey_ids
 
-        if len(shipIDsOutput) >= len(shipIDs):
-            shipsMatch = True
-            for shipID in range(0, len(shipIDs)):
-                if shipIDsOutput[shipID] != shipIDs[shipID]:
-                    shipsMatch = False
+        if len(ship_ids_output) >= len(ship_ids):
+            ships_match = True
+            for ship_id in range(0, len(ship_ids)):
+                if ship_ids_output[ship_id] != ship_ids[ship_id]:
+                    ships_match = False
         else:
-            shipsMatch = False
+            ships_match = False
 
-        if len(journeyIDsOutput) >= len(journeyIDs):
-            journeysMatch = True
-            for journeyID in range(0, len(journeyIDs)):
-                if journeyIDsOutput[journeyID] != journeyIDs[journeyID]:
-                    journeysMatch = False
+        if len(journey_ids_output) >= len(journey_ids):
+            journeys_match = True
+            for journey_id in range(0, len(journey_ids)):
+                if journey_ids_output[journey_id] != journey_ids[journey_id]:
+                    journeys_match = False
         else:
-            journeysMatch = False
+            journeys_match = False
 
-        if journeysMatch:
-            sections = list(journeyIDs)
+        if journeys_match:
+            sections = list(journey_ids)
 
-        if shipsMatch:
-            sections = list(shipIDs)
+        if ships_match:
+            sections = list(ship_ids)
 
-        consoleShipsMatch = shipsMatch or journeysMatch
+        console_ships_match = ships_match or journeys_match
 
-        if consoleShipsMatch:
-            executionComments += 'You\'ve correctly output all the ship journeys to the console.\n'
+        if console_ships_match:
+            execution_comments += 'You\'ve correctly output all the ship journeys to the console.\n'
         else:
-            executionComments += 'You didn\'t output all of the journeys correctly to the console.\n'
+            execution_comments += 'You didn\'t output all of the journeys correctly to the console.\n'
 
-        correctCostCount = 0
-        correctLegalityCount = 0
-        outputLines = output.splitlines()
-        if consoleShipsMatch:
+        correct_cost_count = 0
+        correct_legality_count = 0
+        output_lines = output.splitlines()
+        if console_ships_match:
             # Check the journey cost and viability
-            journeyCostsInt = [int(x) for x in journeyCosts]
-            correctCostCount = Automark._check_existence_in_sections(output, sections, journeyCostsInt)
+            journey_costs_int = [int(x) for x in journey_costs]
+            correct_cost_count = Automark._check_existence_in_sections(output, sections, journey_costs_int)
             sections.append('defenestrate')
             section = 0
             current = sections[section]
             next = sections[section + 1]
-            legalFound = False
-            for line in outputLines:
+            legal_found = False
+            for line in output_lines:
                 if re.search(next, line):
-                    if legalFound:
-                        correctLegalityCount += 1
+                    if legal_found:
+                        correct_legality_count += 1
                     section += 1
                     current = next
                     next = sections[section + 1]
                 legal = Automark.check_legal(line)
-                if legal[0] and (legal[1] == (journeyCosts[section] <= recommendedMax)):
-                    legalFound = True;
+                if legal[0] and (legal[1] == (journey_costs[section] <= recommended_max)):
+                    legal_found = True;
 
-            if legalFound:
-                correctLegalityCount += 1
+            if legal_found:
+                correct_legality_count += 1
 
-        if correctCostCount == numOfShips:
-            executionComments += 'You correctly calculated and output all of the journey costs to the console.\n'
+        if correct_cost_count == num_of_ships:
+            execution_comments += 'You correctly calculated and output all of the journey costs to the console.\n'
         else:
-            executionComments += 'Not all of the costs were correctly calculated and output to the console ({:d} out of {:d})\n'.format(correctCostCount, numOfShips)
+            execution_comments += 'Not all of the costs were correctly calculated and output to the console ({:d} out of {:d})\n'.format(correct_cost_count, num_of_ships)
 
-        if correctLegalityCount == numOfShips:
-            executionComments += 'You correctly determined whether each of the ships was within cost.\n'
+        if correct_legality_count == num_of_ships:
+            execution_comments += 'You correctly determined whether each of the ships was within cost.\n'
         else:
-            executionComments += 'You only determined whether the ships were within cosst correctly for {:d} out of the {:d} ships.\n'.format(correctLegalityCount, numOfShips)
+            execution_comments += 'You only determined whether the ships were within cosst correctly for {:d} out of the {:d} ships.\n'.format(correct_legality_count, num_of_ships)
 
         #Establish the list of viable journeys
-        viableShipIDs = [j for i, j in enumerate(shipIDs) if journeyCosts[i] <= recommendedMax]
-        viableJourneyIDs = [j for i, j in enumerate(journeyIDs) if journeyCosts[i] <= recommendedMax]
-        viableJourneyCosts = [i for i in journeyCosts if i <= recommendedMax]
-        viableShipNum = len(viableShipIDs)
+        viable_ship_ids = [j for i, j in enumerate(ship_ids) if journey_costs[i] <= recommended_max]
+        viable_journey_ids = [j for i, j in enumerate(journey_ids) if journey_costs[i] <= recommended_max]
+        viable_journey_costs = [i for i in journey_costs if i <= recommended_max]
+        viable_ship_num = len(viable_ship_ids)
 
         # Find the highest cost lower than the maxumum recommended
-        highestIndex = max(enumerate(viableJourneyCosts), key= lambda x: x[1])[0]
-        highestShipID = viableShipIDs[highestIndex]
-        highestJourneyID = viableJourneyIDs[highestIndex]
-        highestJourneyCost = viableJourneyCosts[highestIndex]
+        highest_index = max(enumerate(viable_journey_costs), key= lambda x: x[1])[0]
+        highest_ship_id = viable_ship_ids[highest_index]
+        highest_journey_id = viable_journey_ids[highest_index]
+        highest_journey_cost = viable_journey_costs[highest_index]
 
         # Find whether the hightest cost below the maximum has been correctly calculated
-        maxStart = len(outputLines) - 1
-        maxFound = False
-        while (not maxFound) and (maxStart >= 0):
-            if Automark._find_keywords(outputLines[maxStart - 1], ['highest', 'expensive', 'maximum']):
-                maxFound = True
-            maxStart -= 1
+        max_start = len(output_lines) - 1
+        max_found = False
+        while (not max_found) and (max_start >= 0):
+            if Automark._find_keywords(output_lines[max_start - 1], ['highest', 'expensive', 'maximum']):
+                max_found = True
+            max_start -= 1
 
-        if maxFound:
-            maxFound = False
-            for line in outputLines[maxStart:]:
-                maxFound |= Automark._find_keywords(line, [highestShipID, highestJourneyID, '{:.0f}'.format(highestJourneyCost)])
+        if max_found:
+            max_found = False
+            for line in output_lines[max_start:]:
+                max_found |= Automark._find_keywords(line, [highest_ship_id, highest_journey_id, '{:.0f}'.format(highest_journey_cost)])
 
-        executionComments += 'The maximum recommended journey cost entered by the user was {:d}.\n'.format(recommendedMax)
-        executionComments += 'The most expensive journey within this cost was {} costing {:.1f}.\n'.format(highestShipID, highestJourneyCost)
-        if maxFound:
-            executionComments += 'Your program correctly determined this maximum journey.\n'
+        execution_comments += 'The maximum recommended journey cost entered by the user was {:d}.\n'.format(recommended_max)
+        execution_comments += 'The most expensive journey within this cost was {} costing {:.1f}.\n'.format(highest_ship_id, highest_journey_cost)
+        if max_found:
+            execution_comments += 'Your program correctly determined this maximum journey.\n'
         else:
-            executionComments += 'Your program didn\'t correctly determine and output this.\n'
-
+            execution_comments += 'Your program didn\'t correctly determine and output this.\n'
 
         #print '************************* STDOUT *************************'
         #print Automark.clean_text(output)
 
         #print '*************************  FILE  *************************'
-        fileToRead = os.path.join(self.build_dir, "output.txt")
-        with open(fileToRead) as outputFile:
-            fileOutput = outputFile.read()
-        fileOutput = Automark.clean_text(fileOutput)
-        #print fileOutput
+        file_to_read = os.path.join(self.build_dir, "output.txt")
+        with open(file_to_read) as output_file:
+            file_output = output_file.read()
+        file_output = Automark.clean_text(file_output)
+        #print file_output
 
         # Search for ship names and ensure they're in the right order
-        shipIDsOutput_dup = re.findall(r'Boat\d\d\d\dID', fileOutput)
+        ship_ids_output_dup = re.findall(r'Boat\d\d\d\dID', file_output)
         # Remove duplicates but retain ordering
         # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        shipIDsOutput = [ x for x in shipIDsOutput_dup if not (x in seen or seen_add(x))]
+        ship_ids_output = [ x for x in ship_ids_output_dup if not (x in seen or seen_add(x))]
 
         # Search for journey names and ensure they're in the right order
-        journeyIDsOutput_dup = re.findall(r'Journey\d\d\d\dID', fileOutput)
+        journey_ids_output_dup = re.findall(r'Journey\d\d\d\dID', file_output)
         # Remove duplicates but retain ordering
         # From http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
         seen = set()
         seen_add = seen.add
-        journeyIDsOutput = [ x for x in journeyIDsOutput_dup if not (x in seen or seen_add(x))]
+        journey_ids_output = [ x for x in journey_ids_output_dup if not (x in seen or seen_add(x))]
 
-        viableShipsMatch = False
-        if viableShipIDs == shipIDsOutput:
-            viableShipsMatch = True
+        viable_ships_match = False
+        if viable_ship_ids == ship_ids_output:
+            viable_ships_match = True
 
-        viableJourneysMatch = False
-        if viableJourneyIDs == journeyIDsOutput:
-            viableJourneysMatch = True
+        viable_journeys_match = False
+        if viable_journey_ids == journey_ids_output:
+            viable_journeys_match = True
 
-        if viableJourneysMatch:
-            sections = list(viableJourneyIDs)
+        if viable_journeys_match:
+            sections = list(viable_journey_ids)
 
-        if viableShipsMatch:
-            sections = list(viableShipIDs)
+        if viable_ships_match:
+            sections = list(viable_ship_ids)
 
-        fileShipsMatch = viableShipsMatch or viableJourneysMatch
+        file_ships_match = viable_ships_match or viable_journeys_match
 
-        if fileShipsMatch:
-            executionComments += 'Your program correctly listed the ships within cost in your output file.\n'
+        if file_ships_match:
+            execution_comments += 'Your program correctly listed the ships within cost in your output file.\n'
         else:
-            executionComments += 'Your program didn\'t correctly list the ships within cost in your output file.\n'
+            execution_comments += 'Your program didn\'t correctly list the ships within cost in your output file.\n'
 
-        viableCorrectCostCount = 0
-        if fileShipsMatch:
-            viableJourneyCostsInt = [int(x) for x in viableJourneyCosts]
-            viableCorrectCostCount = Automark._check_existence_in_sections(output, sections, viableJourneyCostsInt)
+        viable_correct_cost_count = 0
+        if file_ships_match:
+            viable_journey_costs_int = [int(x) for x in viable_journey_costs]
+            viable_correct_cost_count = Automark._check_existence_in_sections(output, sections, viable_journey_costs_int)
 
-        if viableCorrectCostCount == viableShipNum:
-            executionComments += 'Your program correctly output the costs for these ships.\n'
+        if viable_correct_cost_count == viable_ship_num:
+            execution_comments += 'Your program correctly output the costs for these ships.\n'
         else:
-            executionComments += 'Your program only correctly output the costs for {:d} out of {:d} of these ships.\n'.format(viableCorrectCostCount, len(viableJourneyCosts))
+            execution_comments += 'Your program only correctly output the costs for {:d} out of {:d} of these ships.\n'.format(viable_correct_cost_count, len(viable_journey_costs))
 
-        outputScore = 0
+        output_score = 0
 
-        if consoleShipsMatch:
-            outputScore += 0.2
+        if console_ships_match:
+            output_score += 0.2
 
-        if correctCostCount == numOfShips:
-            outputScore += 0.2
+        if correct_cost_count == num_of_ships:
+            output_score += 0.2
 
-        if correctLegalityCount == numOfShips:
-            outputScore += 1.1
+        if correct_legality_count == num_of_ships:
+            output_score += 1.1
 
-        if maxFound:
-            outputScore += 1.5
+        if max_found:
+            output_score += 1.5
 
-        if fileShipsMatch:
-            outputScore += 0.7
+        if file_ships_match:
+            output_score += 0.7
 
-        if viableCorrectCostCount == viableShipNum:
-            outputScore += 0.2
+        if viable_correct_cost_count == viable_ship_num:
+            output_score += 0.2
 
-        self.extraProgramOutput.append(['Output to wagedaily.txt', fileOutput])
+        self.extra_program_output.append(['Output to wagedaily.txt', file_output])
 
-        outputCheck = [consoleShipsMatch, (correctCostCount == numOfShips), (correctLegalityCount == numOfShips), maxFound, fileShipsMatch, (viableCorrectCostCount == viableShipNum)]
+        output_check = [console_ships_match, (correct_cost_count == num_of_ships), (correct_legality_count == num_of_ships), max_found, file_ships_match, (viable_correct_cost_count == viable_ship_num)]
 
-        return [outputScore, executionComments, outputCheck]
+        return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
-        outputScore = 0
+        output_score = 0
         if execcode.ExecCode.response_check_compiled(result):
-            outputScore += 1.5
-        return outputScore
+            output_score += 1.5
+        return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.programStructure, 7, 23)
-        self.indentationErrors = result[0]
-        indentationScore = result[1]
-        self.errorList.extend(result[2])
-        return indentationScore
+        result = indentation.check_indentation(self.program_structure, 7, 23)
+        self.indentation_errors = result[0]
+        indentation_score = result[1]
+        self.error_list.extend(result[2])
+        return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 1.0, 4.0, 0.06)
-        commentScore = result[0]
-        self.commentGapAverage = result[1]
-        self.commentGapSD = result[2]
-        self.errorList.extend(result[3])
-        return commentScore
+        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
+        comment_score = result[0]
+        self.comment_gap_average = result[1]
+        self.comment_gap_sd = result[2]
+        self.error_list.extend(result[3])
+        return comment_score
 
     @staticmethod
     def check_legal(line):
@@ -355,30 +354,30 @@ class Automark(automark.Automark):
         return found
 
     @staticmethod
-    def _check_existence_in_sections(output, sections, checkList):
+    def _check_existence_in_sections(output, sections, check_list):
         # Check the journey cost and viability
-        correctCount = 0
-        outputLines = output.splitlines()
+        correct_count = 0
+        output_lines = output.splitlines()
 
         sections.append('defenestrate')
         section = 0
         current = sections[section]
         next = sections[section + 1]
         found = False
-        for line in outputLines:
+        for line in output_lines:
             if re.search(next, line):
                 if found:
-                    correctCount += 1
+                    correct_count += 1
                 section += 1
                 current = next
                 next = sections[section + 1]
-            if re.search(str(checkList[section]), line):
+            if re.search(str(check_list[section]), line):
                 found = True
 
         if found:
-            correctCount += 1
+            correct_count += 1
 
-        return correctCount
+        return correct_count
     
 # This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
 class InstanceCreationParam_Visitor(model.Visitor):
@@ -394,7 +393,7 @@ class InstanceCreationParam_Visitor(model.Visitor):
             self.params.append(param)
         return True
         
-    def getParamList(self):
+    def get_param_list(self):
         return self.params
 
 

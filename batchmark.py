@@ -52,9 +52,9 @@ class BatchMark:
         # Select the appropriate task
         tasks = [automark, automarktask1, automarktask2, automarktask3]
         if (self._task < len(tasks)) and (self._task >= 0):
-            self._taskSpecific = tasks[self._task]
+            self._task_specific = tasks[self._task]
         else:
-            self._taskSpecific = tasks[0]
+            self._task_specific = tasks[0]
             print 'Task number out of bounds. Applying general checks.'
 
         #load student feedback form as a template
@@ -69,9 +69,9 @@ class BatchMark:
         self._construct_name_map()
         with open(self._summary_out, 'w') as self._summary:
             self._output_csv_co(['Username', 'Name'])
-            self._output_csv_co(self._taskSpecific.Automark.get_scores_structure())
-            self._output_csv_co(self._taskSpecific.Automark.get_internal_stats_structure())
-            self._output_csv_nl(self._taskSpecific.Automark.get_output_checks_structure())
+            self._output_csv_co(self._task_specific.Automark.get_scores_structure())
+            self._output_csv_co(self._task_specific.Automark.get_internal_stats_structure())
+            self._output_csv_nl(self._task_specific.Automark.get_output_checks_structure())
             self._create_new_feedback_document()
 
     #probably won't work for Windows
@@ -137,11 +137,11 @@ class BatchMark:
                     self._write_student_name_to_document(student_dir, student_dir_name, student_name)
                 else:
                     #print 'file: {}'.format(java_path)
-                    marks = self._taskSpecific.Automark(java_path, 'credentials.txt', self._buid_dir)
+                    marks = self._task_specific.Automark(java_path, 'credentials.txt', self._buid_dir)
                     self._write_details_to_document(student_dir, student_dir_name, student_name, marks)
                     self._write_comments_to_document(student_dir, student_dir_name, marks)
                     self._output_csv_co([student_dir_name, student_name])
-                    self._output_csv_co(marks.getScores())
+                    self._output_csv_co(marks.get_scores())
                     self._output_csv_co(marks.get_internal_stats())
                     self._output_csv_nl(marks.get_output_checks())
 
@@ -161,23 +161,22 @@ class BatchMark:
         for row in range(1,16):
             self._feedback_document.tables[2].cell(row, 2).text = ''
     
-        executionScore = marks.get_execution_score()
-        indentationScore = marks.get_indentation_score()
-        variablesScore = marks.get_variables_score()
-        commentScore = marks.get_comment_score()
-        totalScore = marks.get_total_score()
-        efficientScore = 0
-        if executionScore > 4:
-            efficientScore = 1
-            executionScore -= 1
-        self._feedback_document.tables[2].cell((2 + int(executionScore)), 2).text = '{:g}'.format(executionScore)
-        self._feedback_document.tables[2].cell(9, 2).text = str(indentationScore)
-        self._feedback_document.tables[2].cell(10, 2).text = str(variablesScore)
-        self._feedback_document.tables[2].cell(11, 2).text = str(efficientScore)
-        self._feedback_document.tables[2].cell(13 + int(commentScore), 2).text = str(commentScore)
+        execution_score = marks.get_execution_score()
+        indentation_score = marks.get_indentation_score()
+        variables_score = marks.get_variables_score()
+        comment_score = marks.get_comment_score()
+        total_score = marks.get_total_score()
+        efficient_score = 0
+        if execution_score > 4:
+            efficient_score = 1
+            execution_score -= 1
+        self._feedback_document.tables[2].cell((2 + int(execution_score)), 2).text = '{:g}'.format(execution_score)
+        self._feedback_document.tables[2].cell(9, 2).text = str(indentation_score)
+        self._feedback_document.tables[2].cell(10, 2).text = str(variables_score)
+        self._feedback_document.tables[2].cell(11, 2).text = str(efficient_score)
+        self._feedback_document.tables[2].cell(13 + int(comment_score), 2).text = str(comment_score)
 
-
-        self._feedback_document.tables[2].cell(16, 2).text = '{:g}'.format(totalScore)
+        self._feedback_document.tables[2].cell(16, 2).text = '{:g}'.format(total_score)
         self._feedback_document.save(student_dir+'/../'+filename)
 
     def _write_student_name_to_document(self, student_dir, student_dir_name, student_name):
@@ -201,11 +200,11 @@ class BatchMark:
         for line in inputs:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
-        extraProgramInputs = marks.get_extra_program_inputs()
-        for extra in extraProgramInputs:
+        extra_program_inputs = marks.get_extra_program_inputs()
+        for extra in extra_program_inputs:
             feedback_document.add_heading(extra[0], 3)
-            extraLines = extra[1].splitlines()
-            for line in extraLines:
+            extra_lines = extra[1].splitlines()
+            for line in extra_lines:
                 feedback_document.add_paragraph(line, style='CodeChunk')
     
         feedback_document.add_heading('Program output', 3)
@@ -214,11 +213,11 @@ class BatchMark:
         for line in output:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
-        extraProgramOutputs = marks.get_extra_program_outputs()
-        for extra in extraProgramOutputs:
+        extra_program_outputs = marks.get_extra_program_outputs()
+        for extra in extra_program_outputs:
             feedback_document.add_heading(extra[0], 3)
-            extraLines = extra[1].splitlines()
-            for line in extraLines:
+            extra_lines = extra[1].splitlines()
+            for line in extra_lines:
                 feedback_document.add_paragraph(line, style='CodeChunk')
 
         feedback_document.add_heading('Execution comments', 3)
@@ -230,21 +229,21 @@ class BatchMark:
         feedback_document.add_heading('Your code', 3)
         program = marks.get_full_program().splitlines()
         comments = marks.get_error_list()
-        lineNum = 1
+        line_num = 1
         for line in program:
             line_encoded = line.decode('ascii', 'replace')
             highlight = False
             for comment in comments:
-                if comment[0] == lineNum:
+                if comment[0] == line_num:
                     highlight = True
             if highlight:
-                feedback_document.add_paragraph(str(lineNum) + '\t: ' + line_encoded, style='CodeChunkHighlight')
+                feedback_document.add_paragraph(str(line_num) + '\t: ' + line_encoded, style='CodeChunkHighlight')
                 for comment in comments:
-                    if comment[0] == lineNum:
+                    if comment[0] == line_num:
                         feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')
             else:
-                feedback_document.add_paragraph(str(lineNum) + '\t: ' + line_encoded, style='CodeChunk')
-            lineNum += 1
+                feedback_document.add_paragraph(str(line_num) + '\t: ' + line_encoded, style='CodeChunk')
+            line_num += 1
         for comment in comments:
             if comment[0] == 0:
                 feedback_document.add_paragraph('\t  ' + comment[1], style='CodeChunkComment')

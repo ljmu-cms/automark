@@ -13,33 +13,33 @@ import plyjext.model as model
 import re
 
 def check_variable_name_quality(program, threshold):
-	findVars = Variable_Visitor()
-	if program.programTree != None:
-		program.programTree.accept(findVars)
-	variableShort = 0
-	variableEnumeration = 0
+	find_vars = Variable_Visitor()
+	if program.program_tree != None:
+		program.program_tree.accept(find_vars)
+	variable_short = 0
+	variable_enumeration = 0
 	
-	errorList = []
+	error_list = []
 	strike = 0
 	name = ''
-	for variable in findVars.variables:
+	for variable in find_vars.variables:
 		name = variable[0]
 		if len(name) > 0:
 			if len(name) < 3:
-				variableShort += 1
+				variable_short += 1
 				strike += 1
 				if (strike == threshold):
-					errorList.append([variable[1], 'Use variable names that represent what they\'re being used for'])
+					error_list.append([variable[1], 'Use variable names that represent what they\'re being used for'])
 			if re.search(r'\d+', name) != None:
 				if int(re.search(r'\d+', name).group()) > 0:
-					variableEnumeration += 1
+					variable_enumeration += 1
 					strike += 1
 					if (strike == threshold):
-						errorList.append([variable[1], 'Avoid using sequentially numbered variables names'])
-	variablesScore = 1
+						error_list.append([variable[1], 'Avoid using sequentially numbered variables names'])
+	variables_score = 1
 	if strike >= threshold:
-		variablesScore = 0
-	return [variablesScore, variableShort, variableEnumeration, errorList]
+		variables_score = 0
+	return [variables_score, variable_short, variable_enumeration, error_list]
 
 # This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
 class Variable_Visitor(model.Visitor):

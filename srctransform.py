@@ -16,44 +16,44 @@ import plyjext.parser as plyj
 import os
 import collections
 
-Program = collections.namedtuple('Program', ['program', 'programLines', 'fullProgram', 'programTree', 'lineNumber', 'lineCharacterStart'])
+Program = collections.namedtuple('Program', ['program', 'program_lines', 'full_program', 'program_tree', 'line_number', 'line_character_start'])
 
 def load_source(filename):
     # Load in the program from file
-    fullProgram = ''
+    full_program = ''
     with open(filename) as file:
-        fullProgram = file.read()
+        full_program = file.read()
 
     program = ""
-    lineNumber = []
-    lineCharacterStart = []
-    foundMain = True
-    linesRead = 1
-    linesAdded = 0
-    characterPos = 0
+    line_number = []
+    line_character_start = []
+    found_main = True
+    lines_read = 1
+    lines_added = 0
+    character_pos = 0
     with open(filename) as file:
         for line in file.xreadlines():
             if not line.startswith('package '):
-                if (not foundMain) and (line.find('public class') >= 0):
+                if (not found_main) and (line.find('public class') >= 0):
                     line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
-                    foundMain = True
+                    found_main = True
                 line = re.sub(r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', line)
                 if not (line.isspace() or (len(line) == 0)):
                     program += line
-                    lineNumber.append(linesRead)
-                    lineCharacterStart.append(characterPos)
-                    linesAdded += 1
-                    characterPos += len(line)
-            linesRead += 1
+                    line_number.append(lines_read)
+                    line_character_start.append(character_pos)
+                    lines_added += 1
+                    character_pos += len(line)
+            lines_read += 1
 
     # Store a line-delimited version of the program 
-    programLines = program.splitlines()
+    program_lines = program.splitlines()
     
     # Store a AST version of the program
     parser = plyj.Parser()
-    programTree = parser.parse_string(fullProgram)
+    program_tree = parser.parse_string(full_program)
 
-    programStructure = Program(program, programLines, fullProgram, programTree, lineNumber, lineCharacterStart)
+    program_structure = Program(program, program_lines, full_program, program_tree, line_number, line_character_start)
 
-    return programStructure
+    return program_structure
 

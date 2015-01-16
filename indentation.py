@@ -22,12 +22,12 @@ def substring(line, tab, start):
     return match
 
 def _check_indentation_type(program, tab, notab):
-    indentationErrors = 0
+    indentation_errors = 0
     tabsize = len(tab)
     indent = 0
-    lineNum = 0
-    firstError = 0
-    for line in program.programLines:
+    line_num = 0
+    first_error = 0
+    for line in program.program_lines:
         add = line.count('{') * tabsize
         sub = line.count('}') * tabsize
         tabs = 0
@@ -36,34 +36,34 @@ def _check_indentation_type(program, tab, notab):
             tabs += tabsize
         indent -= sub
         if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == notab)):
-            indentationErrors += 1
-            if indentationErrors <= 1:
-                firstError = lineNum
+            indentation_errors += 1
+            if indentation_errors <= 1:
+                first_error = line_num
             indent = tabs
         indent += add
-        lineNum += 1
-    return [indentationErrors, firstError]
+        line_num += 1
+    return [indentation_errors, first_error]
 
 def check_indentation(program, thresholdlower, thresholdupper):
-    indentErrors = []
-    indentErrors.append(_check_indentation_type(program, '\t', ' '))
-    indentErrors.append(_check_indentation_type(program, '  ', '\t'))
-    indentErrors.append(_check_indentation_type(program, '   ', '\t'))
-    indentErrors.append(_check_indentation_type(program, '    ', '\t'))
+    indent_errors = []
+    indent_errors.append(_check_indentation_type(program, '\t', ' '))
+    indent_errors.append(_check_indentation_type(program, '  ', '\t'))
+    indent_errors.append(_check_indentation_type(program, '   ', '\t'))
+    indent_errors.append(_check_indentation_type(program, '    ', '\t'))
 
-    minError, minErrorIndex = min((val, idx) for (idx, val) in enumerate(indentErrors))
-    indentationErrors = minError[0]
+    min_error, min_error_index = min((val, idx) for (idx, val) in enumerate(indent_errors))
+    indentation_errors = min_error[0]
 
-    errorList = []
-    indentatinoScore = 0
-    if indentationErrors <= thresholdupper:
-        indentatinoScore += 0.5
-    if indentationErrors <= thresholdlower:
-        indentatinoScore += 0.5
+    error_list = []
+    indentatino_score = 0
+    if indentation_errors <= thresholdupper:
+        indentatino_score += 0.5
+    if indentation_errors <= thresholdlower:
+        indentatino_score += 0.5
 
-    if indentationErrors > thresholdlower:
-        errorList.append([program.lineNumber[minError[1]], 'Indentation errors'])
+    if indentation_errors > thresholdlower:
+        error_list.append([program.line_number[min_error[1]], 'Indentation errors'])
 
-    return [indentationErrors, indentatinoScore, errorList]
+    return [indentation_errors, indentatino_score, error_list]
 
 

@@ -38,61 +38,61 @@ class Automark(automark.Automark):
         width = inputs[1]
         height = inputs[2]
         depth = inputs[3]
-        outputCheck = [False, False]
-        outputScore = 0
+        output_check = [False, False]
+        output_score = 0
         output = re.sub("\n\s*\n*", "\n", output)
         lines = output.splitlines()
         volume = -1
         concat = ''
-        executionComments = ''
+        execution_comments = ''
 
-        correctVolume = (width * height * depth)
-        correctConcat = '{:d}{:d}{:d}'.format(width, height, depth)
-        volumeFound = False
-        concatFound = False
+        correct_volume = (width * height * depth)
+        correct_concat = '{:d}{:d}{:d}'.format(width, height, depth)
+        volume_found = False
+        concat_found = False
         for line in lines:
             if re.search(r'\d+', line) != None:
                 volume = int(re.search(r'\d+', line).group())
-                if (volume == correctVolume):
-                    volumeFound = True
+                if (volume == correct_volume):
+                    volume_found = True
             if re.search(r'\d+', line) != None:
                 concat = re.search(r'\d+', line).group()
-                if (concat == correctConcat):
-                    concatFound = True
+                if (concat == correct_concat):
+                    concat_found = True
 
-        if volumeFound:
-            outputScore += 1
-            outputCheck[0] = True
+        if volume_found:
+            output_score += 1
+            output_check[0] = True
         else:
-            executionComments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correctVolume)
+            execution_comments += 'Volume calculated incorrectly (should be {:d} for these inputs).\n'.format(correct_volume)
 
-        if concatFound:
-            outputScore += 1
-            outputCheck[1] = True
+        if concat_found:
+            output_score += 1
+            output_check[1] = True
         else:
-            executionComments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correctConcat)
+            execution_comments += 'Number strings concatenated incorrectly (should be {} for these inputs).\n'.format(correct_concat)
 
-        return [outputScore, executionComments, outputCheck]
+        return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
-        outputScore = 0
+        output_score = 0
         if execcode.ExecCode.response_check_compiled(result):
-            outputScore += 2.5
-        return outputScore
+            output_score += 2.5
+        return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.programStructure, 1, 5)
-        self.indentationErrors = result[0]
-        indentationScore = result[1]
-        self.errorList.extend(result[2])
-        return indentationScore
+        result = indentation.check_indentation(self.program_structure, 1, 5)
+        self.indentation_errors = result[0]
+        indentation_score = result[1]
+        self.error_list.extend(result[2])
+        return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 1.0, 3.0, 0.01)
-        commentScore = result[0]
-        self.commentGapAverage = result[1]
-        self.commentGapSD = result[2]
-        self.errorList.extend(result[3])
-        return commentScore
+        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
+        comment_score = result[0]
+        self.comment_gap_average = result[1]
+        self.comment_gap_sd = result[2]
+        self.error_list.extend(result[3])
+        return comment_score
 
 

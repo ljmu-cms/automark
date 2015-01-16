@@ -14,53 +14,53 @@ This script allows a program to be checked using the ideone api.
 
 import re
 
-def _line_from_character_no_space(program, charPos):
+def _line_from_character_no_space(program, char_pos):
 	line = 0
-	while (line < len(program.lineCharacterStart)) and (charPos >= program.lineCharacterStart[line]):
+	while (line < len(program.line_character_start)) and (char_pos >= program.line_character_start[line]):
 		line += 1
 	return line
 
-def _line_from_character(program, charPos):
-	return program.lineNumber[_line_from_character_no_space(program, charPos) - 1]
+def _line_from_character(program, char_pos):
+	return program.line_number[_line_from_character_no_space(program, char_pos) - 1]
 
-def check_comment_quality(program, frequencyThreshold, consistencyThreshold, aveOffset, sdOffset, aveWeight):
+def check_comment_quality(program, frequency_threshold, consistency_threshold, ave_offset, sd_offset, ave_weight):
 	# Regex expressions search for block comments or full-line comments.
 	# Multiple full-line comments without other text are considered as a single match
-	blockComments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', program.program, (re.MULTILINE | re.DOTALL)))
+	block_comments = list(re.finditer(r'/\*.*?\*/|//.*?$(?!\s*//)', program.program, (re.MULTILINE | re.DOTALL)))
 
-	errorList = []
-	commentGapAverage = 1000.0
-	commentGapSD = 1000.0
-	lastCommentLine = 0
-	commentCount = len(blockComments)
-	if commentCount > 0:
-		gapSum = 0
-		previousEnd = 0
-		for blockComment in blockComments:
-			gapSum += _line_from_character_no_space(program, blockComment.start()) - previousEnd
-			previousEnd = _line_from_character_no_space(program, blockComment.end()) + 1
-		gapSum += len(program.programLines) - previousEnd
-		commentGapAverage = gapSum / float(commentCount)
+	error_list = []
+	comment_gap_average = 1000.0
+	comment_gap_sd = 1000.0
+	last_comment_line = 0
+	comment_count = len(block_comments)
+	if comment_count > 0:
+		gap_sum = 0
+		previous_end = 0
+		for block_comment in block_comments:
+			gap_sum += _line_from_character_no_space(program, block_comment.start()) - previous_end
+			previous_end = _line_from_character_no_space(program, block_comment.end()) + 1
+		gap_sum += len(program.program_lines) - previous_end
+		comment_gap_average = gap_sum / float(comment_count)
 
-		gapSumSquared = 0.0
-		previousEnd = 0
-		for blockComment in blockComments:
-			gapSumSquared += ((_line_from_character_no_space(program, blockComment.start()) - previousEnd) - commentGapAverage)**2.0
-			previousEnd = _line_from_character_no_space(program, blockComment.end()) + 1
-		gapSumSquared += ((len(program.programLines) - previousEnd) - commentGapAverage)**2.0
-		commentGapSD = (gapSumSquared / commentCount)**0.5
+		gap_sum_squared = 0.0
+		previous_end = 0
+		for block_comment in block_comments:
+			gap_sum_squared += ((_line_from_character_no_space(program, block_comment.start()) - previous_end) - comment_gap_average)**2.0
+			previous_end = _line_from_character_no_space(program, block_comment.end()) + 1
+		gap_sum_squared += ((len(program.program_lines) - previous_end) - comment_gap_average)**2.0
+		comment_gap_sd = (gap_sum_squared / comment_count)**0.5
 		
-		lastCommentLine = _line_from_character(program, blockComments[commentCount - 1].end())
+		last_comment_line = _line_from_character(program, block_comments[comment_count - 1].end())
 
-	commentFrequency = max(1.0 - ((max(commentGapAverage - aveOffset, 0.0)) * aveWeight), 0.0)
-	commentConsistency = max(1.0 - ((max(commentGapSD - sdOffset, 0.0)) * 1.0), 0.0)
-	commentScore = int(round(commentFrequency + commentConsistency))
+	comment_frequency = max(1.0 - ((max(comment_gap_average - ave_offset, 0.0)) * ave_weight), 0.0)
+	comment_consistency = max(1.0 - ((max(comment_gap_sd - sd_offset, 0.0)) * 1.0), 0.0)
+	comment_score = int(round(comment_frequency + comment_consistency))
 
-	if commentFrequency < frequencyThreshold:
-		errorList.append([lastCommentLine, 'Try to include more comments in your code'])
-	if commentConsistency < consistencyThreshold:
-		errorList.append([lastCommentLine, 'Include comments evenly throughout your code, not just in a few places'])
-	return [commentScore, commentGapAverage, commentGapSD, errorList]
+	if comment_frequency < frequency_threshold:
+		error_list.append([last_comment_line, 'Try to include more comments in your code'])
+	if comment_consistency < consistency_threshold:
+		error_list.append([last_comment_line, 'Include comments evenly throughout your code, not just in a few places'])
+	return [comment_score, comment_gap_average, comment_gap_sd, error_list]
 
 
 

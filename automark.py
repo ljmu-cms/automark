@@ -26,9 +26,9 @@ import srctransform
 class Automark:
     output_checks = 0
 
-    def __init__(self, filename, credentialsFile, build_dir):
+    def __init__(self, filename, credentials_file, build_dir):
         # Read in the credentials from file
-        with open(credentialsFile) as file:
+        with open(credentials_file) as file:
             self.user = file.readline().rstrip('\n')
             self.password = file.readline().rstrip('\n')
             self.score = 0
@@ -36,80 +36,80 @@ class Automark:
             self.classname = os.path.splitext(os.path.split(filename)[1])[0]
 
         # Load in the program file
-        self.programStructure = srctransform.load_source(filename)
+        self.program_structure = srctransform.load_source(filename)
 
         # Initialise the inputs
         self.stdin = ''
-        self.executionComments = ''
+        self.execution_comments = ''
 
         # Initialise the scoring state
-        self.commentScore = 0
-        self.variablesScore = 0
-        self.indentationScore = 0
-        self.executionScore = 0
+        self.comment_score = 0
+        self.variables_score = 0
+        self.indentation_score = 0
+        self.execution_score = 0
 
         # Initialise the internal stats
-        self.errorList = []
+        self.error_list = []
         self.inputs = []
-        self.commentGapAverage = 0.0
-        self.commentGapSD = 0.0
-        self.variableShort = 0
-        self.variableEnumeration = 0
-        self.indentationErrors = 0
-        self.executionTime = 0.0
-        self.memoryUsed = 0
-        self.executionResult = 0
-        self.programOutput = ''
-        self.outputCheck = []
-        self.outputCheck.append(False)
-        self.outputCheck.append(False)
+        self.comment_gap_average = 0.0
+        self.comment_gap_sd = 0.0
+        self.variable_short = 0
+        self.variable_enumeration = 0
+        self.indentation_errors = 0
+        self.execution_time = 0.0
+        self.memory_used = 0
+        self.execution_result = 0
+        self.program_output = ''
+        self.output_check = []
+        self.output_check.append(False)
+        self.output_check.append(False)
         self.build_dir = build_dir
-        self.extraProgramInput = []
-        self.extraProgramOutput = []
+        self.extra_program_input = []
+        self.extra_program_output = []
 
-        self.commentScore = self.check_comment_quality()
-        self.variablesScore = self.check_variable_name_quality()
-        self.indentationScore = self.check_indentation()
-        self.executionScore = self.check_execution()
+        self.comment_score = self.check_comment_quality()
+        self.variables_score = self.check_variable_name_quality()
+        self.indentation_score = self.check_indentation()
+        self.execution_score = self.check_execution()
         
         print 'Final score: {:g}\n'.format(self.get_total_score())
 
     def get_full_program(self):
-        return self.programStructure.fullProgram
+        return self.program_structure.full_program
 
     def get_total_score(self):
-        totalScore = self.commentScore + self.variablesScore + self.indentationScore + self.executionScore
-        return totalScore
+        total_score = self.comment_score + self.variables_score + self.indentation_score + self.execution_score
+        return total_score
 
     def get_comment_score(self):
-        return self.commentScore
+        return self.comment_score
     
     def get_variables_score(self):
-        return self.variablesScore
+        return self.variables_score
         
     def get_indentation_score(self):
-        return self.indentationScore
+        return self.indentation_score
 
     def get_execution_score(self):
-        return self.executionScore
+        return self.execution_score
 
     def get_extra_program_inputs(self):
-        return self.extraProgramInput
+        return self.extra_program_input
 
     def get_extra_program_outputs(self):
-        return self.extraProgramOutput
+        return self.extra_program_output
 
     @staticmethod
     def get_scores_structure():
         return ['Execution', 'Indentation', 'Variables', 'Comments', 'Total']
 
-    def getScores(self):
+    def get_scores(self):
         # Execution score
         # Indentation
         # Variable names
         # Comments
         # Total
-        scores = [self.executionScore, self.indentationScore, self.variablesScore, self.commentScore, self.get_total_score()]
+        scores = [self.execution_score, self.indentation_score, self.variables_score, self.comment_score, self.get_total_score()]
         return scores
 
     @staticmethod
@@ -136,11 +136,11 @@ class Automark:
         # Execution input
         # Execution result
         # Execution output
-        stats = [self.commentGapAverage, self.commentGapSD, self.variableShort, self.variableEnumeration, self.indentationErrors, self.executionTime, self.memoryUsed, self.stdin, self.executionResult, Automark.clean_text(self.programOutput)]
+        stats = [self.comment_gap_average, self.comment_gap_sd, self.variable_short, self.variable_enumeration, self.indentation_errors, self.execution_time, self.memory_used, self.stdin, self.execution_result, Automark.clean_text(self.program_output)]
         return stats
 
     def get_output_checks(self):
-        return self.outputCheck
+        return self.output_check
 
     @staticmethod
     def get_error_status(response):
@@ -177,20 +177,20 @@ class Automark:
         return self.stdin
 
     def get_output(self):
-        return Automark.clean_text(self.programOutput)
+        return Automark.clean_text(self.program_output)
         
     def get_execution_comments(self):
-        return self.executionComments
+        return self.execution_comments
         
     def get_error_list(self):
-        return self.errorList
+        return self.error_list
 
     @staticmethod
-    def print_error_list(errorList):
-        errorText = ''
-        for error in errorList:
-            errorText += str(error[0]) + ' : ' + error[1] + '\n'
-        print errorText
+    def print_error_list(error_list):
+        error_text = ''
+        for error in error_list:
+            error_text += str(error[0]) + ' : ' + error[1] + '\n'
+        print error_text
 
     def setup_inputs(self):
         stdin = ""
@@ -214,52 +214,52 @@ class Automark:
     # True - Success; the output appears correct
     # False - Failure; the output looks incorrect
     def check_output_correctness(self, output, inputs):
-        outputCheck = []
-        outputScore = 0
+        output_check = []
+        output_score = 0
         output = re.sub("\n\s*\n*", "\n", output)
         lines = output.splitlines()
-        executionComments = ''
+        execution_comments = ''
 
-        return [outputScore, executionComments, outputCheck]
+        return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
-        outputScore = 0
+        output_score = 0
         if execcode.ExecCode.response_check_compiled(result):
-            outputScore += 1
-        return outputScore
+            output_score += 1
+        return output_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.programStructure, 0.75, 0.75, 5.0, 2.0, 0.5)
-        commentScore = result[0]
-        self.commentGapAverage = result[1]
-        self.commentGapSD = result[2]
-        self.errorList.extend(result[3])
-        return commentScore
+        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 5.0, 2.0, 0.5)
+        comment_score = result[0]
+        self.comment_gap_average = result[1]
+        self.comment_gap_sd = result[2]
+        self.error_list.extend(result[3])
+        return comment_score
 
     def check_variable_name_quality(self):
-        result = variables.check_variable_name_quality(self.programStructure, 3)
-        variablesScore = result[0]
-        self.variableShort = result[1]
-        self.variableEnumeration = result[2]
-        self.errorList.extend(result[3])
-        return variablesScore
+        result = variables.check_variable_name_quality(self.program_structure, 3)
+        variables_score = result[0]
+        self.variable_short = result[1]
+        self.variable_enumeration = result[2]
+        self.error_list.extend(result[3])
+        return variables_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.programStructure, 3, 3)
-        self.indentationErrors = result[0]
-        indentationScore = result[1]
-        self.errorList.extend(result[2])
-        return indentationScore
+        result = indentation.check_indentation(self.program_structure, 3, 3)
+        self.indentation_errors = result[0]
+        indentation_score = result[1]
+        self.error_list.extend(result[2])
+        return indentation_score
 
     def check_execution(self):
-        executionScore = 0
-        #return executionScore
+        execution_score = 0
+        #return execution_score
         # Creating wsdl client
-        #wsdlObject = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
-        wsdlObject = execcode.ExecCode(self.build_dir, self.classname)
+        #wsdl_object = WSDL.Proxy('http://ideone.com/api/1/service.wsdl')
+        wsdl_object = execcode.ExecCode(self.build_dir, self.classname)
 
         # Check the available languages
-        #response = wsdlObject.getLanguages(self.user, self.password);
+        #response = wsdl_object.getLanguages(self.user, self.password);
         #print response['item'][1].value['item']
         #    We don't need to check the languages every time
         #    Just use:
@@ -271,7 +271,7 @@ class Automark:
         self.stdin = self.inputs[0]
 
         error = 'OK'
-        response = wsdlObject.createSubmission(self.user, self.password, self.programStructure.program, 10, self.stdin, True, True)
+        response = wsdl_object.createSubmission(self.user, self.password, self.program_structure.program, 10, self.stdin, True, True)
         error = Automark.get_error_status(response)
         if error != 'OK':
             print 'Error: ' + error
@@ -280,77 +280,77 @@ class Automark:
 
             # Periodically check the submission status
             status = -1;
-            waitTime = 1
+            wait_time = 1
             while status != 0:
-                time.sleep(waitTime)
-                waitTime = 3
-                response = wsdlObject.getSubmissionStatus(self.user, self.password, link)
+                time.sleep(wait_time)
+                wait_time = 3
+                response = wsdl_object.getSubmissionStatus(self.user, self.password, link)
                 Automark.check_error_status(response)
                 status = Automark.get_value(response, 'status')
                 Automark.check_submissions_status (status)
 
             # Find out what happened to the program
             result = Automark.get_value(response, 'result')
-            self.executionResult = result
-            executionScore += self.check_execute_result(result)
+            self.execution_result = result
+            execution_score += self.check_execute_result(result)
             if result == 11:
                 print 'Compilation error'
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, True)
-                compInfo = Automark.get_value(response, 'cmpinfo')
-                #print 'Compilation output: ' + compInfo
-                self.programOutput = compInfo
-                self.executionComments = 'Program failed to compile.'
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, False, False, True)
+                cmpinfo = Automark.get_value(response, 'cmpinfo')
+                #print 'Compilation output: ' + cmpinfo
+                self.program_output = cmpinfo
+                self.execution_comments = 'Program failed to compile.'
             elif result == 12:
                 print 'Runtime error'
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
-                stdErrOutput = Automark.get_value(response, 'stderr')
-                #print 'Runtime error: ' + stdErrOutput
-                self.programOutput = stdErrOutput
-                self.executionComments = 'Runtime error occurred during execution.'
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
+                stderr_output = Automark.get_value(response, 'stderr')
+                #print 'Runtime error: ' + stderr_output
+                self.program_output = stderr_output
+                self.execution_comments = 'Runtime error occurred during execution.'
             elif result == 13:
                 print 'Time limit exceeded'
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
-                self.executionTime = Automark.get_value(response, 'time')
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
+                self.execution_time = Automark.get_value(response, 'time')
                 output = Automark.get_value(response, 'output')
-                self.programOutput = output
+                self.program_output = output
                 result = self.check_output_correctness(output, self.inputs)
-                executionScore += result[0]
-                self.executionComments += result[1]
-                self.outputCheck = result[2]
+                execution_score += result[0]
+                self.execution_comments += result[1]
+                self.output_check = result[2]
                 if result[0] > 0:
-                    executionScore -= 1
-                self.executionComments = 'Execution failed to complete (time limit exceeded).'
+                    execution_score -= 1
+                self.execution_comments = 'Execution failed to complete (time limit exceeded).'
             elif result == 17:
                 print 'Memory limit exceeded'
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
-                self.memoryUsed = Automark.get_value(response, 'memory')
-                print 'Memory used: {} bytes'.format(self.memoryUsed)
-                self.executionComments = 'Execution failed to complete (ran out of memory).'
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, False, False, False)
+                self.memory_used = Automark.get_value(response, 'memory')
+                print 'Memory used: {} bytes'.format(self.memory_used)
+                self.execution_comments = 'Execution failed to complete (ran out of memory).'
             elif result == 19:
                 print 'Illegal system call'
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
-                stdErrOutput = Automark.get_value(response, 'stderr')
-                print 'Error output: ' + stdErrOutput
-                self.programOutput = stdErrOutput
-                self.executionComments = 'Execution failed to complete (illegal system call).'
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, False, True, False)
+                stderr_output = Automark.get_value(response, 'stderr')
+                print 'Error output: ' + stderr_output
+                self.program_output = stderr_output
+                self.execution_comments = 'Execution failed to complete (illegal system call).'
             elif result == 15:
-                response = wsdlObject.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
+                response = wsdl_object.getSubmissionDetails(self.user, self.password, link, False, False, True, False, False)
                 Automark.check_error_status(response)
-                self.executionTime = Automark.get_value(response, 'time')
-                self.memoryUsed = Automark.get_value(response, 'memory')
+                self.execution_time = Automark.get_value(response, 'time')
+                self.memory_used = Automark.get_value(response, 'memory')
                 date = Automark.get_value(response, 'date')
                 output = Automark.get_value(response, 'output')
-                self.programOutput = output
+                self.program_output = output
                 result = self.check_output_correctness(output, self.inputs)
-                executionScore += result[0]
-                self.executionComments += result[1]
-                self.outputCheck = result[2]
+                execution_score += result[0]
+                self.execution_comments += result[1]
+                self.output_check = result[2]
                 if result[0] == 5:
-                    self.executionComments += 'Your outputs correctly match the specification.\n'
+                    self.execution_comments += 'Your outputs correctly match the specification.\n'
             else:
                 print 'Internal error with the code checking system'
 
-        executionScore = round(min(5.0, max(0.0, executionScore)))
+        execution_score = round(min(5.0, max(0.0, execution_score)))
 
-        return executionScore
+        return execution_score
 
