@@ -30,13 +30,13 @@ class Automark(automark.Automark):
     def setup_inputs(self):
         # Establish the name of the input file
         find_file_input = FileReader_Visitor()
-        if self.program_structure.program_tree != None:
-            self.program_structure.program_tree.accept(find_file_input)
+        if self._program_structure.program_tree != None:
+            self._program_structure.program_tree.accept(find_file_input)
 
         # Replace the input file with "input.txt" so we can control it
         if len(find_file_input.filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(find_file_input.filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.program_structure.program)
-            self.program_structure = self.program_structure._replace(program = transformed)
+            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(find_file_input.filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self._program_structure.program)
+            self._program_structure = self._program_structure._replace(program = transformed)
 
         # Generate variables for the input file
         ship_length = random.randint(20, 100)
@@ -48,11 +48,11 @@ class Automark(automark.Automark):
         container_weight = random.randint(3, 20)
         ship_max_weight = (math.trunc ((ship_length * ship_width * ship_height) / (container_length * container_width * container_height)) * container_weight) + 1
 
-        if not os.path.exists(self.build_dir):
-            os.makedirs(self.build_dir)
+        if not os.path.exists(self._build_dir):
+            os.makedirs(self._build_dir)
 
         input_contents = '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n'.format(ship_length, ship_width, ship_height, container_length, container_width, container_height, container_weight, ship_max_weight)
-        file_to_write = os.path.join(self.build_dir, "input.txt")
+        file_to_write = os.path.join(self._build_dir, "input.txt")
         with open(file_to_write, 'w') as input_file:
             input_file.write(input_contents)
 
@@ -180,18 +180,18 @@ class Automark(automark.Automark):
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.program_structure, 1, 14)
-        self.indentation_errors = result[0]
+        result = indentation.check_indentation(self._program_structure, 1, 14)
+        self._indentation_errors = result[0]
         indentation_score = result[1]
-        self.error_list.extend(result[2])
+        self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
+        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
         comment_score = result[0]
-        self.comment_gap_average = result[1]
-        self.comment_gap_sd = result[2]
-        self.error_list.extend(result[3])
+        self._comment_gap_average = result[1]
+        self._comment_gap_sd = result[2]
+        self._error_list.extend(result[3])
         return comment_score
 
     @staticmethod

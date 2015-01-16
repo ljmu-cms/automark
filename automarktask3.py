@@ -31,25 +31,25 @@ class Automark(automark.Automark):
     def setup_inputs(self):
         # Establish the name of the input file
         find_file_input = InstanceCreationParam_Visitor('FileReader')
-        if self.program_structure.program_tree != None:
-            self.program_structure.program_tree.accept(find_file_input)
+        if self._program_structure.program_tree != None:
+            self._program_structure.program_tree.accept(find_file_input)
 
         # Replace the input file with "input.txt" so we can control it
         filename = find_file_input.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self.program_structure.program)
-            self.program_structure = self.program_structure._replace(program = transformed)
+            transformed = re.sub(r'(FileReader\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"input.txt"\3', self._program_structure.program)
+            self._program_structure = self._program_structure._replace(program = transformed)
 
         # Establish the name of the output file
         find_file_output = InstanceCreationParam_Visitor('PrintWriter')
-        if self.program_structure.program_tree != None:
-            self.program_structure.program_tree.accept(find_file_output)
+        if self._program_structure.program_tree != None:
+            self._program_structure.program_tree.accept(find_file_output)
 
         # Replace the output file with "output.txt" so we can control it
         filename = find_file_output.get_param_list()
         if len(filename) > 0:
-            transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self.program_structure.program)
-            self.program_structure = self.program_structure._replace(program = transformed)
+            transformed = re.sub(r'(PrintWriter\s*\(\s*)(' + re.escape(filename[0][0]) + ')(\s*\))', r'\1"output.txt"\3', self._program_structure.program)
+            self._program_structure = self._program_structure._replace(program = transformed)
 
         # Generate the input file
         journey_costs = []
@@ -79,16 +79,16 @@ class Automark(automark.Automark):
         # Find median journey cost
         recommended_max = int ((journey_costs[int (num_of_ships / 2)] + journey_costs[int (num_of_ships / 2) + 1]) / 2.0)
 
-        if not os.path.exists(self.build_dir):
-            os.makedirs(self.build_dir)
+        if not os.path.exists(self._build_dir):
+            os.makedirs(self._build_dir)
 
-        file_to_write = os.path.join(self.build_dir, "input.txt")
+        file_to_write = os.path.join(self._build_dir, "input.txt")
         with open(file_to_write, 'w') as input_file:
             input_file.write(input_contents)
 
         stdin = '{:d}\n'.format(recommended_max)
 
-        self.extra_program_input.append(['Input from input.txt', input_contents])
+        self._extra_program_input.append(['Input from input.txt', input_contents])
 
         return [stdin, num_of_ships, ship_ids, journey_ids, journey_costs, recommended_max]
 
@@ -225,7 +225,7 @@ class Automark(automark.Automark):
         #print Automark.clean_text(output)
 
         #print '*************************  FILE  *************************'
-        file_to_read = os.path.join(self.build_dir, "output.txt")
+        file_to_read = os.path.join(self._build_dir, "output.txt")
         with open(file_to_read) as output_file:
             file_output = output_file.read()
         file_output = Automark.clean_text(file_output)
@@ -298,7 +298,7 @@ class Automark(automark.Automark):
         if viable_correct_cost_count == viable_ship_num:
             output_score += 0.2
 
-        self.extra_program_output.append(['Output to wagedaily.txt', file_output])
+        self._extra_program_output.append(['Output to wagedaily.txt', file_output])
 
         output_check = [console_ships_match, (correct_cost_count == num_of_ships), (correct_legality_count == num_of_ships), max_found, file_ships_match, (viable_correct_cost_count == viable_ship_num)]
 
@@ -311,18 +311,18 @@ class Automark(automark.Automark):
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.program_structure, 7, 23)
-        self.indentation_errors = result[0]
+        result = indentation.check_indentation(self._program_structure, 7, 23)
+        self._indentation_errors = result[0]
         indentation_score = result[1]
-        self.error_list.extend(result[2])
+        self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
+        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
         comment_score = result[0]
-        self.comment_gap_average = result[1]
-        self.comment_gap_sd = result[2]
-        self.error_list.extend(result[3])
+        self._comment_gap_average = result[1]
+        self._comment_gap_sd = result[2]
+        self._error_list.extend(result[3])
         return comment_score
 
     @staticmethod
@@ -381,19 +381,19 @@ class Automark(automark.Automark):
     
 # This doesn't confirm to PEP 8, but has been left to match Java and the PLYJ API
 class InstanceCreationParam_Visitor(model.Visitor):
-    def __init__(self, className, paramNum=0, verbose=False):
+    def __init__(self, class_name, param_num=0, verbose=False):
         super(InstanceCreationParam_Visitor, self).__init__()
-        self.className = className
-        self.paramNum = paramNum
-        self.params = []
+        self._class_name = class_name
+        self._param_num = param_num
+        self._params = []
 
     def leave_InstanceCreation(self, element):
-        if element.type.name.value == self.className:
-            param = [element.arguments[self.paramNum].value, element.lineno]
-            self.params.append(param)
+        if element.type.name.value == self._class_name:
+            param = [element.arguments[self._param_num].value, element.lineno]
+            self._params.append(param)
         return True
         
     def get_param_list(self):
-        return self.params
+        return self._params
 
 

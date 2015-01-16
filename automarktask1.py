@@ -81,18 +81,18 @@ class Automark(automark.Automark):
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self.program_structure, 1, 5)
-        self.indentation_errors = result[0]
+        result = indentation.check_indentation(self._program_structure, 1, 5)
+        self._indentation_errors = result[0]
         indentation_score = result[1]
-        self.error_list.extend(result[2])
+        self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(self.program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
+        result = comments.check_comment_quality(self._program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
         comment_score = result[0]
-        self.comment_gap_average = result[1]
-        self.comment_gap_sd = result[2]
-        self.error_list.extend(result[3])
+        self._comment_gap_average = result[1]
+        self._comment_gap_sd = result[2]
+        self._error_list.extend(result[3])
         return comment_score
 
 
