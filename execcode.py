@@ -137,7 +137,7 @@ class ExecCode:
 
     #http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
     @staticmethod
-    def which(program):
+    def _which(program):
         'Check whether a given executable exists'
         def is_exe(fpath):
             # Establish whether the file is executablee
@@ -287,7 +287,7 @@ class ExecCode:
             'For internal use. Compiles the java source code.'
             result = False
             output = ''
-            if ExecCode.which('javac') == None:
+            if ExecCode._which('javac') == None:
                 # The Java compiler couldn't be found
                 output = 'Java compiler javac could not be found'
                 self._set_submission_status('OK', 0, 20)
@@ -311,7 +311,7 @@ class ExecCode:
         def _execute(self, tempfolder, classname, input):
             'For internal use. Executes the java source code.'
             output = ''
-            if ExecCode.which('java') == None:
+            if ExecCode._which('java') == None:
                 # The Java VM could not be found
                 print 'Java VM could not be found'
                 self._set_submission_status('OK', 1, 0)

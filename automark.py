@@ -152,7 +152,7 @@ class Automark:
         return error
 
     @staticmethod
-    def get_value(response, key):
+    def _get_value(response, key):
         value = ''
         for item in response['item']:
             if item.key == key:
@@ -277,7 +277,7 @@ class Automark:
         if error != 'OK':
             print 'Error: ' + error
         else:
-            link = Automark.get_value(response, 'link')
+            link = Automark._get_value(response, 'link')
 
             # Periodically check the submission status
             status = -1;
@@ -287,32 +287,32 @@ class Automark:
                 wait_time = 3
                 response = wsdl_object.getSubmissionStatus(self._user, self._password, link)
                 Automark.check_error_status(response)
-                status = Automark.get_value(response, 'status')
+                status = Automark._get_value(response, 'status')
                 Automark.check_submissions_status (status)
 
             # Find out what happened to the program
-            result = Automark.get_value(response, 'result')
+            result = Automark._get_value(response, 'result')
             self._execution_result = result
             execution_score += self.check_execute_result(result)
             if result == 11:
                 print 'Compilation error'
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, False, False, True)
-                cmpinfo = Automark.get_value(response, 'cmpinfo')
+                cmpinfo = Automark._get_value(response, 'cmpinfo')
                 #print 'Compilation output: ' + cmpinfo
                 self._program_output = cmpinfo
                 self._execution_comments = 'Program failed to compile.'
             elif result == 12:
                 print 'Runtime error'
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, False, True, False)
-                stderr_output = Automark.get_value(response, 'stderr')
+                stderr_output = Automark._get_value(response, 'stderr')
                 #print 'Runtime error: ' + stderr_output
                 self._program_output = stderr_output
                 self._execution_comments = 'Runtime error occurred during execution.'
             elif result == 13:
                 print 'Time limit exceeded'
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, True, False, False)
-                self._execution_time = Automark.get_value(response, 'time')
-                output = Automark.get_value(response, 'output')
+                self._execution_time = Automark._get_value(response, 'time')
+                output = Automark._get_value(response, 'output')
                 self._program_output = output
                 result = self.check_output_correctness(output, self._inputs)
                 execution_score += result[0]
@@ -324,23 +324,23 @@ class Automark:
             elif result == 17:
                 print 'Memory limit exceeded'
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, False, False, False)
-                self._memory_used = Automark.get_value(response, 'memory')
+                self._memory_used = Automark._get_value(response, 'memory')
                 print 'Memory used: {} bytes'.format(self._memory_used)
                 self._execution_comments = 'Execution failed to complete (ran out of memory).'
             elif result == 19:
                 print 'Illegal system call'
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, False, True, False)
-                stderr_output = Automark.get_value(response, 'stderr')
+                stderr_output = Automark._get_value(response, 'stderr')
                 print 'Error output: ' + stderr_output
                 self._program_output = stderr_output
                 self._execution_comments = 'Execution failed to complete (illegal system call).'
             elif result == 15:
                 response = wsdl_object.getSubmissionDetails(self._user, self._password, link, False, False, True, False, False)
                 Automark.check_error_status(response)
-                self._execution_time = Automark.get_value(response, 'time')
-                self._memory_used = Automark.get_value(response, 'memory')
-                date = Automark.get_value(response, 'date')
-                output = Automark.get_value(response, 'output')
+                self._execution_time = Automark._get_value(response, 'time')
+                self._memory_used = Automark._get_value(response, 'memory')
+                date = Automark._get_value(response, 'date')
+                output = Automark._get_value(response, 'output')
                 self._program_output = output
                 result = self.check_output_correctness(output, self._inputs)
                 execution_score += result[0]

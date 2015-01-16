@@ -172,7 +172,7 @@ class Automark(automark.Automark):
                     section += 1
                     current = next
                     next = sections[section + 1]
-                legal = Automark.check_legal(line)
+                legal = Automark._check_legal(line)
                 if legal[0] and (legal[1] == (journey_costs[section] <= recommended_max)):
                     legal_found = True;
 
@@ -326,7 +326,7 @@ class Automark(automark.Automark):
         return comment_score
 
     @staticmethod
-    def check_legal(line):
+    def _check_legal(line):
         legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 'lower', 'acceptable']
         illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 'heavier', 'greater', 'higher', 'too', 'larger', 'unacceptable']
 

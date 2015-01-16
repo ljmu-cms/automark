@@ -11,7 +11,7 @@ Check a program against task requirements
 This script allows a program to be checked using the ideone api.
 """
 
-def substring(line, tab, start):
+def _substring(line, tab, start):
     match = True
     if (len(tab) + start) <= len(line):
         for position in range(0, len(tab)):
@@ -32,7 +32,7 @@ def _check_indentation_type(program, tab, notab):
         sub = line.count('}') * tabsize
         tabs = 0
         #while line[tabs] == '\t':
-        while substring(line, tab, tabs):
+        while _substring(line, tab, tabs):
             tabs += tabsize
         indent -= sub
         if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == notab)):
