@@ -1,34 +1,65 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
-"""
-automark
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Check a program against task requirements
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
 
-This script allows a program to be checked using the ideone api.
 """
+Check a program against task requirements.
+
+Implements the Automark interface for task 3 of the 4001COMP Java 
+programming module in 2015 at LJMU.
+"""
+
+import os
+import re
+
+from random import randint
+from plyjext.model import Visitor
 
 import automark
-import random
-import re
-import plyjext.model as model
-import os
-import math
-import string
-import comments
-import indentation
-import execcode
+from execcode import ExecCode
+from comments import check_comment_quality
+from indentation import check_indentation
+
+__all__ = ('Automark')
+
 
 class Automark(automark.Automark):
-    output_checks = 6
+    """
+    Check Java source against the task 3 requirements.
+    """
+
+    """
+    OUTPUT_CHECKS represents the number of additional checks that are 
+    performed by the marking process. These will be output individually 
+    to the summary csv file.
+    """
+    OUTPUT_CHECKS = 6
 
     def __init__(self, filename, credentials_file, build_dir):
+        """
+        Initialise the Automark class.
+        
+        Attributes:
+            filename: The Java source file to mark.
+            credentials_file: File containing username and password on 
+                separate lines. The contents are ignored if the execution is 
+                to be done locally. If using Sphere Engine, these should be 
+                ideone credentials.
+            build_dir: Temporary folder to store build and execution files.
+        """
         automark.Automark.__init__(self, filename, credentials_file, build_dir)
 
     def setup_inputs(self):
+        """
+        Set up the inputs needed for marking the code.
+        
+        Generates random values to pass via the input.txt file and stdin.
+        """
         # Establish the name of the input file
         find_file_input = InstanceCreationParam_Visitor('FileReader')
         if self._program_structure.program_tree != None:
@@ -62,23 +93,23 @@ class Automark(automark.Automark):
         # Generate the input file
         journey_costs = []
         input_contents = ''
-        num_of_ships = random.randint(5,9)
+        num_of_ships = randint(5,9)
         ship_ids = []
         journey_ids = []
         for ship in range(0, num_of_ships):
-            ship_id = u'Boat{:d}ID'.format(random.randint(1000,9999))
+            ship_id = u'Boat{:d}ID'.format(randint(1000,9999))
             ship_ids.append(ship_id)
             input_contents += '{}\n'.format(ship_id)
-            journey_id = u'Journey{:d}ID'.format(random.randint(1000, 9999))
+            journey_id = u'Journey{:d}ID'.format(randint(1000, 9999))
             journey_ids.append(journey_id)
             input_contents += '{}\n'.format(journey_id)
-            journey_length = random.randint(4, 30)
+            journey_length = randint(4, 30)
             input_contents += '{:d}\n'.format(journey_length)
-            crew_num = random.randint(1, 10)
+            crew_num = randint(1, 10)
             input_contents += '{:d}\n'.format(crew_num)
             journey_cost = 0
             for crew_member in range(0, crew_num):
-                rate = random.randint(20, 100) / 2.0
+                rate = randint(20, 100) / 2.0
                 input_contents += '{:.1f}\n'.format(rate)
                 journey_cost += rate * journey_length
             input_contents += '\n'
@@ -104,6 +135,9 @@ class Automark(automark.Automark):
             recommended_max]
 
     def check_output_correctness(self, output, inputs):
+        """
+        Checks whether outputs generated conform to the task requirements.
+        """
         num_of_ships = inputs[1]
         ship_ids = inputs[2]
         journey_ids = inputs[3]
@@ -361,20 +395,29 @@ class Automark(automark.Automark):
         return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
+        """
+        Assigns marks based on execution results.
+        """
         output_score = 0
-        if execcode.ExecCode.response_check_compiled(result):
+        if ExecCode.response_check_compiled(result):
             output_score += 1.5
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self._program_structure, 7, 23)
+        """
+        Assigns marks based on indentation quality.
+        """
+        result = check_indentation(self._program_structure, 7, 23)
         self._indentation_errors = result[0]
         indentation_score = result[1]
         self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(
+        """
+        Assigns marks based on comment quality.
+        """
+        result = check_comment_quality(
             self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
         comment_score = result[0]
         self._comment_gap_average = result[1]
@@ -384,6 +427,17 @@ class Automark(automark.Automark):
 
     @staticmethod
     def _check_legal(line):
+        """
+        Check if a line of text relates to seaworthiness.
+        
+        The task requires the program to state whether the ship is too 
+        heavy to sail, so check the line to find keywords that relate to 
+        this.
+        
+        Return whether anything relevant was found. If it was, the best 
+        guess as to whether it said the boat was seaworthy, or dangerous, 
+        is returned.
+        """
         legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter', 
             'lower', 'acceptable']
         illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 
@@ -406,6 +460,11 @@ class Automark(automark.Automark):
 
     @staticmethod
     def _find_keywords(line, words):
+        """
+        Search a line for any of the keywords in a list.
+        
+        Return True if any of the keywords are there, False otherwise.
+        """
         found = False
         for keyword in words:
             if re.search(re.escape(keyword), line, re.IGNORECASE) != None:
@@ -414,6 +473,21 @@ class Automark(automark.Automark):
 
     @staticmethod
     def _check_existence_in_sections(output, sections, check_list):
+        """
+        Check whether the right output numbers are in the right sections.
+        
+        The task requires various details about ships to be output. As a 
+        result, the output is created in sections. Usually the ship or 
+        journey title is given on the first line, followed by numerical 
+        details such as the hold-volume of the ship, number of containers 
+        it can hold, and so on.
+        
+        This method looks for section titles, and if found, looks for 
+        any of the numbers related to those sections.
+        
+        Return the number of sections correctly containing the data 
+        associated with that section.
+        """
         # Check the journey cost and viability
         correct_count = 0
         output_lines = output.splitlines()
@@ -437,23 +511,46 @@ class Automark(automark.Automark):
             correct_count += 1
 
         return correct_count
+
     
 # This doesn't confirm to PEP 8, but has been left to match 
 # Java and the PLYJ API
-class InstanceCreationParam_Visitor(model.Visitor):
+class InstanceCreationParam_Visitor(Visitor):
+    """
+    Find parameter passed when creating instances in the AST.
+    
+    Visitor for checking the Java AST for any class instantiations of the 
+    class specified. If they exist, the requested parameter passed to the 
+    initialiser are recorded, along with the line number it occured on.
+    """
+
     def __init__(self, class_name, param_num=0, verbose=False):
+        """
+        Initialise the InstanceCreationParam_Visitor class.
+        
+        Attributes:
+        class_name: Name of the class to check for.
+        param_num: Index of the parameter to record (default 0).
+        verbose: True if the results are to be output directly.
+        """
         super(InstanceCreationParam_Visitor, self).__init__()
         self._class_name = class_name
         self._param_num = param_num
         self._params = []
 
     def leave_InstanceCreation(self, element):
+        """
+        Record the details for the class instantiation.
+        """
         if element.type.name.value == self._class_name:
             param = [element.arguments[self._param_num].value, element.lineno]
             self._params.append(param)
         return True
         
     def get_param_list(self):
+        """
+        Return the parameters found when checking the AST.
+        """
         return self._params
 
 

@@ -1,26 +1,56 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
+
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
+
 """
-automark
+Load in a Java file and create various transformed copies of the code.
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Check a program against task requirements
-
-This script allows a program to be checked using the ideone api.
+The file is loaded in and either refactored or transformed in various ways. 
+Some of the transformations alter the semantics of the program to allow 
+it to be executed in the constrained Automark environment.
 """
 
-import re
-import plyjext.parser as plyj
-import os
-import collections
+from re import sub
+from collections import namedtuple
+from plyjext.parser import Parser
 
-Program = collections.namedtuple(
+__all__ = ('load_source')
+
+
+Program = namedtuple(
     'Program', ['program', 'program_lines', 'full_program', 'program_tree', 
     'line_number', 'line_character_start'])
 
+
 def load_source(filename):
+    """
+    Load a Java source file and refactor/transform it in various ways.
+    
+    Performs various transformations and refactorings that are helpful 
+    later on when performing automated marking. This is done at the 
+    outset to avoid having to do it multiple times in the code elsewhere.
+    
+    Args:
+        filename: The Java program to load.
+        
+    Returns:
+        The structure contains the code in various forms.
+        program: Program as a single string with blank lines removed, and 
+            some imports switched to command-line alternatives.
+        program_lines: Code split into lines.
+        full_program: Original code with no changes made.
+        program_tree: AST for the code.
+        line_number: List of the original line number for each line, indexed 
+            by the line numbers after blank lines have been removed.
+        line_character_start: List of character indices for the start of 
+            each line of code. These relate to the code after blank lines 
+            have been removed.
+    """
     # Load in the program from file
     full_program = ''
     with open(filename) as file:
@@ -37,9 +67,9 @@ def load_source(filename):
         for line in file.xreadlines():
             if not line.startswith('package '):
                 if (not found_main) and (line.find('public class') >= 0):
-                    line = re.sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
+                    line = sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
                     found_main = True
-                line = re.sub(
+                line = sub(
                     r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', 
                     line)
                 if not (line.isspace() or (len(line) == 0)):
@@ -54,7 +84,7 @@ def load_source(filename):
     program_lines = program.splitlines()
     
     # Store a AST version of the program
-    parser = plyj.Parser()
+    parser = Parser()
     program_tree = parser.parse_string(full_program)
 
     program_structure = Program(

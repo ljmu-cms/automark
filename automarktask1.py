@@ -1,33 +1,66 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
-"""
-automark
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Check a program against task requirements
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
 
-This script allows a program to be checked using the ideone api.
 """
+Check a program against task requirements.
+
+Implements the Automark interface for task 1 of the 4001COMP Java 
+programming module in 2015 at LJMU.
+"""
+
+import re
+
+from random import randint
 
 import automark
-import random
-import re
-import comments
-import indentation
-import execcode
+from execcode import ExecCode
+from comments import check_comment_quality
+from indentation import check_indentation
+
+__all__ = ('Automark')
+
 
 class Automark(automark.Automark):
-    output_checks = 2
+    """
+    Check Java source against the task 1 requirements.
+    """
+
+    """
+    OUTPUT_CHECKS represents the number of additional checks that are 
+    performed by the marking process. These will be output individually 
+    to the summary csv file.
+    """
+    OUTPUT_CHECKS = 2
 
     def __init__(self, filename, credentialsFile, build_dir):
+        """
+        Initialise the Automark class.
+        
+        Attributes:
+            filename: The Java source file to mark.
+            credentials_file: File containing username and password on 
+                separate lines. The contents are ignored if the execution is 
+                to be done locally. If using Sphere Engine, these should be 
+                ideone credentials.
+            build_dir: Temporary folder to store build and execution files.
+        """
         automark.Automark.__init__(self, filename, credentialsFile, build_dir)
 
     def setup_inputs(self):
-        width = random.randint(1, 100)
-        height = random.randint(1, 100)
-        depth = random.randint(1, 100)
+        """
+        Set up the inputs needed for marking the code.
+        
+        Generates random values to pass via stdin.
+        """
+        width = randint(1, 100)
+        height = randint(1, 100)
+        depth = randint(1, 100)
         stdin = "{}\n{}\n{}\n".format(width, height, depth)
         return [stdin, width, height, depth]
 
@@ -35,6 +68,9 @@ class Automark(automark.Automark):
     # True - Success; the output appears correct
     # False - Failure; the output looks incorrect
     def check_output_correctness(self, output, inputs):
+        """
+        Checks whether outputs generated conform to the task requirements.
+        """
         width = inputs[1]
         height = inputs[2]
         depth = inputs[3]
@@ -79,20 +115,29 @@ class Automark(automark.Automark):
         return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
+        """
+        Assigns marks based on execution results.
+        """
         output_score = 0
-        if execcode.ExecCode.response_check_compiled(result):
+        if ExecCode.response_check_compiled(result):
             output_score += 2.5
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self._program_structure, 1, 5)
+        """
+        Assigns marks based on indentation quality.
+        """
+        result = check_indentation(self._program_structure, 1, 5)
         self._indentation_errors = result[0]
         indentation_score = result[1]
         self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(
+        """
+        Assigns marks based on comment quality.
+        """
+        result = check_comment_quality(
             self._program_structure, 0.75, 0.75, 1.0, 3.0, 0.01)
         comment_score = result[0]
         self._comment_gap_average = result[1]

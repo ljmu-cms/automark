@@ -1,27 +1,41 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python2
 # vim: et:ts=4:textwidth=80
+
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
+
 """
-automark
+Check multiple programs against task requirements
+
+This script allows multiple programs to be checked either locally or
+using the ideone api.
 
 David Llewellyn-Jones, Posco Tso
 Liverpool John Moores University
 18/12/2014
-Check programs against task requirements
+Released under the GPL v.3. See the LICENSE file for more details.
 
-This script allows multiple programs to be checked using the ideone api.
 """
 
-from docx import Document
-import xlrd
 import os
-import subprocess
-import argparse
+
 import automark
 import automarktask1
 import automarktask2
 import automarktask3
-import time
+
+from argparse import ArgumentParser
+from docx import Document
+from time import time
+from xlrd import open_workbook
 from zipfile import ZipFile
+
+__all__ = ('BatchMark')
+
 
 # Task number
 # Folder containing students' folders
@@ -31,10 +45,31 @@ from zipfile import ZipFile
 # Student details list (optional)
 # Summary output (optional)
 
-class BatchMark:
+class BatchMark(object):
+    """
+    Mark multiple code submissions and generate feedback sheets.
+    
+    Initialise with the various attributes outlined below. Then call the
+    go() method to start the batch marking process.
+
+    Attributes:
+        task: Task number
+        marking_dir: Folder containing students' folders
+        marker_name: Marker's initials (optional)
+        build_dir: Temp build folder (optional)
+        feedback_doc_name: Feedback template (optional)
+        marking_sheet_name: Student details list (optional)
+        summary-out: Summary output (optional)
+
+    """
+
     def __init__(
             self, task, marking_dir, marker_name, build_dir, 
             feedback_doc_name, marking_sheet_name, summary_out):
+        """
+        Initialise the BatchMark class with the attributes needed for it
+        to run, and print out those attributes.
+        """
         print ('Task: ' + str(task))
         print ("Folder to check in: " + marking_dir)
         print ('Marker name: ' + marker_name)
@@ -62,11 +97,14 @@ class BatchMark:
         #load student feedback form as a template
         self._feedback_document = Document(feedback_doc_name)
         #load my marking sheet 'PT' from workbook
-        self._marking_sheet = xlrd.open_workbook(
+        self._marking_sheet = open_workbook(
             marking_sheet_name).sheet_by_name(marker_name)
 
     #do things
     def go(self):
+        """
+        Start the marking process based on the initialisation parameters.
+        """
         #username to firstname lastname map/dictionary
         self._name_map = {}
         self._construct_name_map()
@@ -82,6 +120,10 @@ class BatchMark:
             self._create_new_feedback_document()
 
     def _unzip_submission(self, student_dir):
+        """
+        Internal method, cycle through the folders in the given path and
+        extract the contents of any zip archives found.
+        """
         archive_file = ''
         for check_dir, _, file in os.walk(student_dir):
             if '__MACOSX' not in check_dir.split('/'):
@@ -96,6 +138,10 @@ class BatchMark:
             print ('No zip archive')
 
     def _output_csv(self, items):
+        """
+        Internal method, output the item list to a csv file. Items are 
+        separated by commas, but there's no comma at the start or end.
+        """
         count = 0
         for item in items:
             self._summary.write('\"')
@@ -106,14 +152,27 @@ class BatchMark:
             count += 1
 
     def _output_csv_co(self, items):
+        """
+        Internal method, output the item list to a csv file. Items are 
+        separated by commas and a comma is acced to the end for 
+        continuation.
+        """
         self._output_csv(items)
         self._summary.write(', ')
 
     def _output_csv_nl(self, items):
+        """
+        Internal method, output the item list to a csv file. Items are
+        separated by commas and a newline is output at the end.
+        """
         self._output_csv(items)
         self._summary.write('\n')
 
     def _mark (self, directory):
+        """
+        Internal method, return the last java file found in the 
+        directory.
+        """
         java_file = ''
         for check_dir, _, file in os.walk(directory):
             if '__MACOSX' not in check_dir.split('/'):
@@ -123,6 +182,12 @@ class BatchMark:
         return java_file
 
     def _create_new_feedback_document(self):
+        """
+        Internal method, cycle through the folders, unzip any archives, 
+        compile and execute the java programs, test the results, output 
+        a completed feedback file, write out the results to the csv 
+        summary file.
+        """
         print
         for student_dir, _, file in os.walk(self._marking_dir):
             student_dir_name = os.path.relpath(student_dir, self._marking_dir)
@@ -161,6 +226,10 @@ class BatchMark:
 
     def _write_details_to_document(
             self, student_dir, student_dir_name, student_name, marks):
+        """
+        Internal method, write out student details and the results of the 
+        marking to a feedback document.
+        """
         #default cell for student's firstname lastname
         filename = self._feedback_doc_name.replace(
             'username', student_dir_name)
@@ -202,7 +271,11 @@ class BatchMark:
         self._feedback_document.save(student_dir+'/../'+filename)
 
     def _write_student_name_to_document(
-        self, student_dir, student_dir_name, student_name):
+            self, student_dir, student_dir_name, student_name):
+        """
+        Internal method, write out student details to the feedback 
+        document.
+        """
         #default cell for student's firstname lastname
         filename = self._feedback_doc_name.replace(
             'username', student_dir_name)
@@ -214,6 +287,10 @@ class BatchMark:
 
     def _write_comments_to_document(
             self, student_dir, student_dir_name, marks):
+        """
+        Internal method, write out marking comments to the feedback 
+        document.
+        """
         filename = os.path.basename(
             self._feedback_doc_name).replace('username', student_dir_name)
 
@@ -282,6 +359,11 @@ class BatchMark:
         feedback_document.save(student_dir+'/../'+filename)
 
     def _construct_name_map(self):
+        """
+        Internal method, collect the usernames and student names from a 
+        provided Excel document. The details are used to populate the
+        feedback document with student details.
+        """
         username_index = 0
         is_constructing_name_map = False
 
@@ -297,6 +379,7 @@ class BatchMark:
                     'Username')
                 is_constructing_name_map = True
 
+
 # Task number
 # Folder containing students' folders
 # Marker's initials (optional)
@@ -305,47 +388,49 @@ class BatchMark:
 # Student details list (optional)
 # Summary output (optional)
 
-start = time.time()
-parser = argparse.ArgumentParser(
-    description='Batch marker for 4001COMP Java programming.')
+# Run as a script, but skip this bit if the code is being imported
+if __name__ == "__main__":
+    start = time()
+    parser = ArgumentParser(
+        description='Batch marker for 4001COMP Java programming.')
 
-# Required parameters
-parser.add_argument(
-    'task', metavar='TASK', type=int, help='Task number (e.g. 1)')
-parser.add_argument(
-    'workdir', metavar='WORK', type=str, 
-    help='Folder containing students\' folders (e.g. ./DLJ)')
+    # Required parameters
+    parser.add_argument(
+        'task', metavar='TASK', type=int, help='Task number (e.g. 1)')
+    parser.add_argument(
+        'workdir', metavar='WORK', type=str, 
+        help='Folder containing students\' folders (e.g. ./DLJ)')
 
-# Optional parameters
-parser.add_argument(
-    '-i', '--initials', metavar='INITIALS', type=str, 
-    help='Marker\'s initials (default Master)', default='Master')
-parser.add_argument(
-    '-b', '--builddir', metavar='BUILD', type=str, 
-    help='Folder to output build files to (default ./build)', 
-    default='./build')
-parser.add_argument(
-    '-t', '--template', metavar='TEMPLATE', type=str, 
-    help='Word feedback sheeet template (default ./feedback_username.docx)', 
-    default='./feedback_username.docx')
-parser.add_argument(
-    '-d', '--details', metavar='DETAILS', type=str, 
-    help='Excel student list (default ./4001COMP Marking 2014-15.xlsx)', 
-    default='./4001COMP Marking 2014-15.xlsx')
+    # Optional parameters
+    parser.add_argument(
+        '-i', '--initials', metavar='INITIALS', type=str, 
+        help='Marker\'s initials (default Master)', default='Master')
+    parser.add_argument(
+        '-b', '--builddir', metavar='BUILD', type=str, 
+        help='Folder to output build files to (default ./build)', 
+        default='./build')
+    parser.add_argument(
+        '-t', '--template', metavar='TEMPLATE', type=str, 
+        help='Word feedback sheeet template (default ./feedback_username.docx)', 
+        default='./feedback_username.docx')
+    parser.add_argument(
+        '-d', '--details', metavar='DETAILS', type=str, 
+        help='Excel student list (default ./4001COMP Marking 2014-15.xlsx)', 
+        default='./4001COMP Marking 2014-15.xlsx')
 
-parser.add_argument(
-    '-s', '--summary', metavar='SUMMARY', type=str, 
-    help='Summary of marks as a CSV file (default ./summary.csv)', 
-    default='./summary.csv')
+    parser.add_argument(
+        '-s', '--summary', metavar='SUMMARY', type=str, 
+        help='Summary of marks as a CSV file (default ./summary.csv)', 
+        default='./summary.csv')
 
-# Apply these arguments
-args = parser.parse_args()
-batchmark = BatchMark(
-    args.task, args.workdir, args.initials, args.builddir, args.template, 
-    args.details, args.summary)
-batchmark.go()
+    # Apply these arguments
+    args = parser.parse_args()
+    batchmark = BatchMark(
+        args.task, args.workdir, args.initials, args.builddir, args.template, 
+        args.details, args.summary)
+    batchmark.go()
 
-end = time.time()
-duration = end - start
-print 'Time taken: {}'.format(duration)
+    end = time()
+    duration = end - start
+    print 'Time taken: {}'.format(duration)
 

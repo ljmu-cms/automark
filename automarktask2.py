@@ -1,33 +1,66 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
-"""
-automark
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Check a program against task requirements
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
 
-This script allows a program to be checked using the ideone api.
 """
+Check a program against task requirements.
+
+Implements the Automark interface for task 2 of the 4001COMP Java 
+programming module in 2015 at LJMU.
+"""
+
+import os
+import re
+
+from math import trunc
+from random import randint
+from plyjext.model import Visitor
 
 import automark
-import random
-import re
-import plyjext.model as model
-import os
-import math
-import comments
-import indentation
-import execcode
+from execcode import ExecCode
+from comments import check_comment_quality
+from indentation import check_indentation
+
+__all__ = ('Automark')
+
 
 class Automark(automark.Automark):
-    output_checks = 5
+    """
+    Check Java source against the task 2 requirements.
+    """
+
+    """
+    OUTPUT_CHECKS represents the number of additional checks that are 
+    performed by the marking process. These will be output individually 
+    to the summary csv file.
+    """
+    OUTPUT_CHECKS = 5
 
     def __init__(self, filename, credentials_file, build_dir):
+        """
+        Initialise the Automark class.
+        
+        Attributes:
+            filename: The Java source file to mark.
+            credentials_file: File containing username and password on 
+                separate lines. The contents are ignored if the execution is 
+                to be done locally. If using Sphere Engine, these should be 
+                ideone credentials.
+            build_dir: Temporary folder to store build and execution files.
+        """
         automark.Automark.__init__(self, filename, credentials_file, build_dir)
 
     def setup_inputs(self):
+        """
+        Set up the inputs needed for marking the code.
+        
+        Generates random values to store in the input.txt file.
+        """
         # Establish the name of the input file
         find_file_input = FileReader_Visitor()
         if self._program_structure.program_tree != None:
@@ -44,14 +77,14 @@ class Automark(automark.Automark):
                 program = transformed)
 
         # Generate variables for the input file
-        ship_length = random.randint(20, 100)
-        ship_width = random.randint(20, 100)
-        ship_height= random.randint(20, 100)
-        container_length = random.randint(3, 10)
-        container_width = random.randint(3, 10)
-        container_height = random.randint(3, 10)
-        container_weight = random.randint(3, 20)
-        ship_max_weight = (math.trunc ((
+        ship_length = randint(20, 100)
+        ship_width = randint(20, 100)
+        ship_height= randint(20, 100)
+        container_length = randint(3, 10)
+        container_width = randint(3, 10)
+        container_height = randint(3, 10)
+        container_weight = randint(3, 20)
+        ship_max_weight = (trunc ((
             ship_length * ship_width * ship_height) / (container_length * 
             container_width * container_height)) * container_weight) + 1
 
@@ -74,6 +107,9 @@ class Automark(automark.Automark):
             ship_max_weight]
 
     def check_output_correctness(self, output, inputs):
+        """
+        Checks whether outputs generated conform to the task requirements.
+        """
         ship_length = inputs[1]
         ship_width = inputs[2]
         ship_height= inputs[3]
@@ -92,7 +128,7 @@ class Automark(automark.Automark):
         ship_volume = ship_length * ship_height * ship_width
         container_volume = (
             container_length * container_height * container_width)
-        container_max = math.trunc(ship_volume / container_volume)
+        container_max = trunc(ship_volume / container_volume)
         container_weight = container_max * container_weight
         legal = (container_weight <= ship_max_weight)
 
@@ -203,20 +239,29 @@ class Automark(automark.Automark):
         return [output_score, execution_comments, output_check]
 
     def check_execute_result(self, result):
+        """
+        Assigns marks based on execution results.
+        """
         output_score = 0
-        if execcode.ExecCode.response_check_compiled(result):
+        if ExecCode.response_check_compiled(result):
             output_score += 1.7
         return output_score
 
     def check_indentation(self):
-        result = indentation.check_indentation(self._program_structure, 1, 14)
+        """
+        Assigns marks based on indentation quality.
+        """
+        result = check_indentation(self._program_structure, 1, 14)
         self._indentation_errors = result[0]
         indentation_score = result[1]
         self._error_list.extend(result[2])
         return indentation_score
 
     def check_comment_quality(self):
-        result = comments.check_comment_quality(
+        """
+        Assigns marks based on comment quality.
+        """
+        result = check_comment_quality(
             self._program_structure, 0.75, 0.75, 2.0, 6.0, 0.08)
         comment_score = result[0]
         self._comment_gap_average = result[1]
@@ -226,20 +271,43 @@ class Automark(automark.Automark):
 
     @staticmethod
     def _find_keywords(line, words):
+        """
+        Search a line for any of the keywords in a list.
+        
+        Return True if any of the keywords are there, False otherwise.
+        """
         found = False
         for keyword in words:
             if re.search(re.escape(keyword), line) != None:
                 found = True
         return found
 
+
 # This doesn't confirm to PEP 8, but has been left to match 
 # Java and the PLYJ API
-class FileReader_Visitor(model.Visitor):
+class FileReader_Visitor(Visitor):
+    """
+    Find filenames passed to FileReader in the AST.
+    
+    Visitor for checking the Java AST for any instantiations of the 
+    FileReader class. If they exist, the filename passed to the 
+    initialiser is recorded, along with the line number it occured on.
+    """
+    
     def __init__(self, verbose=False):
+        """
+        Initialise the FileReader_Visitor class.
+        
+        Attributes:
+        verbose: True if the results are to be output directly.
+        """
         super(FileReader_Visitor, self).__init__()
         self.filename = []
 
     def leave_InstanceCreation(self, element):
+        """
+        Record the details of the FileReader instantiation.
+        """
         if element.type.name.value == 'FileReader':
             filename = [element.arguments[0].value, element.lineno]
             self.filename.append(filename)

@@ -1,39 +1,92 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
 
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
+
 """
-automark
+Return statistics about the frequency and consistency of Java comments.
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Check a program against task requirements
-
-This script allows a program to be checked using the ideone api.
+Analyse a Java source file and return the average and standard deviation 
+of the lines per comment, ignoring blank lines.
 """
 
-import re
+from re import finditer, MULTILINE, DOTALL
+
+__all__ = ('check_comment_quality')
+
 
 def _line_from_character_no_space(program, char_pos):
+    """
+    Return line number of a character for code with blanks lines removed.
+    
+    For internal use, returns the line number for the character with a 
+    given index. Works on the program refactored to remove blank lines.
+    
+    Args:
+        program: The lines of code as a String, with blank lines removed.
+        char_pos: Index of the character.
+        
+    Returns:
+        The line number that the character appears on.
+    """
 	line = 0
 	while (line < len(program.line_character_start)) and (
 	        char_pos >= program.line_character_start[line]):
 		line += 1
 	return line
 
+
 def _line_from_character(program, char_pos):
+    """
+    Return line number of a character in the original code (with blank lines).
+    
+    For internal use, returns the line number for the character with a 
+    given index. Works on the original program containing blank lines.
+    
+    Args:
+        program: The lines of code as a String.
+        char_pos: Index of the character.
+        
+    Returns:
+        The line number that the character appears on.
+    """
 	return program.line_number[_line_from_character_no_space(
 	    program, char_pos) - 1]
+
 
 def check_comment_quality(
         program, frequency_threshold, consistency_threshold, 
         ave_offset, sd_offset, ave_weight):
+    """
+    Check the quality of comments in a piece of code.
+    
+    Return details about the quality of comments in a given piece of code.
+    
+    Args:
+        program: The code to mark.
+        frequency_threshold: Threshold for frequency above which to generate 
+            a feedback comment.
+        consistency_threshold: Threshold for consistency above which to 
+            generate a feedback comment.
+        ave_offset: Offset value for calculating frequency marks.
+        sd_offset: Offset value for calculating consistency marks.
+        ave_weight: Weighting of ave to sd for calculating marks.
+        
+    Returns:
+        List containing the calculated mark, the average gap between 
+        comments, the standard deviation of the gap between comments and 
+        a list of errors to provide as feedback.
+    """
 	# Regex expressions search for block comments or full-line comments.
 	# Multiple full-line comments without other text are considered as a 
 	# single match
-	block_comments = list(re.finditer(
+	block_comments = list(finditer(
 	    r'/\*.*?\*/|//.*?$(?!\s*//)', program.program, 
-	    (re.MULTILINE | re.DOTALL)))
+	    (MULTILINE | DOTALL)))
 
 	error_list = []
 	comment_gap_average = 1000.0

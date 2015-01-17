@@ -1,30 +1,40 @@
-#!/usr/bin/env python
 # vim: et:ts=4:textwidth=80
-"""
-execcode
 
-David Llewellyn-Jones
-Liverpool John Moores University
-18/12/2014
-Execute code with given inputs and return the outputs
+# Automark
+#
+# David Llewellyn-Jones
+# Liverpool John Moores University
+# 18/12/2014
+# Released under the GPL v.3. See the LICENSE file for more details.
+
+"""
+Execute code with given inputs and return the outputs.
+
+Provide a local alternative to the ideone Sphere Engine code execution
+engine for Java programs. A single Java source file is provided to 
+create a submission. This is executed with the given intputs, after
+which the outputs are returned for testing.
 """
 
-import sys
 import os
-from subprocess import PIPE, Popen, STDOUT
-import time
-import collections
-import shutil
-try:
-    from Queue import Queue, Empty
-except ImportError:
-    from queue import Queue, Empty  # python 3.x
+import sys
 
-Status = collections.namedtuple('Status', ['key', 'value'])
+from collections import namedtuple
+from Queue import Queue, Empty
+from time import strftime, time, sleep
+from shutil import copytree
+from subprocess import PIPE, Popen, STDOUT
+
+Status = namedtuple('Status', ['key', 'value'])
 ON_POSIX = 'posix' in sys.builtin_module_names
 
-class ExecCode:
-    'Compile and execute a piece of code so it can be evaluted'
+__all__ = ('ExecCode')
+
+
+class ExecCode(object):
+    """
+    Compile and execute a piece of code so it can be evaluted
+    """
     # user and password are ignored in this implementation
 
     # createSubmission(sourceCode, input)
@@ -38,7 +48,9 @@ class ExecCode:
     # output, stderr, cmpinfo
 
     def __init__(self, tempfolder, classname):
-        'Create a new instane of ExecCode(tempfolder)'
+        """
+        Create a new instane of ExecCode(tempfolder).
+        """
         # Establish the temp folder
         self._tempfolder = tempfolder
         self._classname = classname
@@ -47,18 +59,20 @@ class ExecCode:
     # This doesn't confirm to PEP 8, but has been left to match the ideone API
     def createSubmission(
             self, user, password, sourceCode, language, input, run, private):
-        'Create a new piece of code to be compiled and executed'
+        """
+        Create a new piece of code to be compiled and executed.
+        """
         # Store the persistent info
         self._sourceCode = sourceCode
         self._input = input
         self._status = 0
-        self._date = time.strftime('%Y-%m-%d %H-%M-%S')
+        self._date = strftime('%Y-%m-%d %H-%M-%S')
 
         # Create the temp folder if it doesn't already exist
         if not os.path.exists(self._tempfolder):
             os.makedirs(self._tempfolder)
         if not os.path.exists(self._tempfolder + '/uk'):
-            shutil.copytree('java/uk', self._tempfolder + '/uk')
+            copytree('java/uk', self._tempfolder + '/uk')
 
         # Create the temporary source file to build based on the source code 
         # provided
@@ -80,7 +94,9 @@ class ExecCode:
 
     # This doesn't confirm to PEP 8, but has been left to match the ideone API
     def getSubmissionStatus(self, user, password, link):
-        'Get the status of the code submission'
+        """
+        Get the status of the code submission.
+        """
         if self._status == 0:
             # The compilation/execution sub-thread hasn't been spawned yet, 
             # so we construct the response ourselves
@@ -95,7 +111,9 @@ class ExecCode:
     def getSubmissionDetails(
             self, user, password, link, withSource, withInput, withOutput, 
             withStderr, withCmpinfo):
-        'Get detailed information about a submission compilation and execution'
+        """
+        Get detailed information about a submission compilation and execution.
+        """
         if self._status == 0:
             # The compilation/execution sub-thread hasn't been spawned yet, 
             # so we construct the response ourselves
@@ -126,8 +144,12 @@ class ExecCode:
 
     @staticmethod
     def get_value(response, key):
-        'Helper function to extract a value from the return data for the '
-        'given key'
+        """
+        Extract a value from the return data for the given key.
+        
+        This is a helper function that makes it easier to deal with the 
+        value returned by the methods.
+        """
         value = ''
         # Find the item with the appropriate key
         for item in response['item']:
@@ -139,7 +161,9 @@ class ExecCode:
     @staticmethod
     def check_submissions_status(status):
         description = 'Unknown'
-        'Print out a status string based on the status number'
+        """
+        Print out a status string based on the status number.
+        """
         if status < 0:
             description = 'Waiting for compilation'
         elif status == 1:
@@ -151,7 +175,9 @@ class ExecCode:
     # exists-in-python
     @staticmethod
     def _which(program):
-        'Check whether a given executable exists'
+        """
+        Check whether a given executable exists.
+        """
         def is_exe(fpath):
             # Establish whether the file is executablee
             return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -174,6 +200,15 @@ class ExecCode:
 
     @staticmethod
     def response_check_compiled(response):
+        """
+        Check whether the code compiled correctly.
+        
+        Convert the response value from the process into a boolean 
+        representing whether or not the code successfully compiled without
+        error.
+        
+        Return True if the code compiled without error.
+        """
         compiled = False
         if response >= 12:
             compiled = True
@@ -181,6 +216,11 @@ class ExecCode:
 
     @staticmethod
     def _tidy_up(tempfolder):
+        """
+        Tidy the temporary folder containing build files.
+        
+        Removes various temporary files generated by the checking process.
+        """
         for file in os.listdir(tempfolder):
             extension = os.path.splitext(file)[1]
             if (extension == '.class') or (extension == '.java'):
@@ -189,10 +229,13 @@ class ExecCode:
 
     import threading
     class Submission(threading.Thread):
-        'Threading class to allow compilation and execution in parallel with '
-        'other tasks'
+        """
+        Threading class to support parallel compilation and execution.
+        """
         def __init__(self, tempfolder, tempsource, classname, input):
-            'Initialise the thread'
+            """
+            Initialise the thread.
+            """
             # Set up the initial variable values that the thread needss
             self._error = 'OK'
             self._status = -1
@@ -212,7 +255,9 @@ class ExecCode:
             ExecCode.threading.Thread.__init__(self)
 
         def run(self):
-            'The thread entry point'
+            """
+            The thread entry point.
+            """
             # Compile the source file
             self._compile_result = self._compile_source(
                 self._tempfolder, self._tempsource)
@@ -243,7 +288,9 @@ class ExecCode:
                         self._set_submission_status('OK', 0, 15)
 
         def _set_submission_status(self, error, status, result):
-            'For internal use. Sets the status info for a given submssion.'
+            """
+            For internal use, set the status info for a given submssion.
+            """
             # Ensure only one thread can read/write the details simultaneously 
             # by acquring a lock
             self._update_status.acquire()
@@ -280,7 +327,9 @@ class ExecCode:
         #       program again
 
         def _get_submission_status(self):
-            'For internal use. Gets status info about a given submssion.'
+            """
+            For internal use, gets status info about a given submssion.
+            """
             # Ensure only one thread can read/write the details simultaneously 
             # by acquring a lock
             self._update_status.acquire()
@@ -294,7 +343,9 @@ class ExecCode:
         def get_submission_details(
                 self, withSource, withInput, withOutput, withStderr, 
                 withCmpinfo):
-            'For internal use. Gets details of a completed submssion.'
+            """
+            For internal use, gets details of a completed submssion.
+            """
             details = {'item': []}
             details['item'].append(Status('error', self._error))
             details['item'].append(Status('time', (
@@ -316,7 +367,9 @@ class ExecCode:
             return details
 
         def _compile_source(self, tempfolder, tempsource):
-            'For internal use. Compiles the java source code.'
+            """
+            For internal use, compiles the java source code.
+            """
             result = False
             output = ''
             if ExecCode._which('javac') == None:
@@ -345,7 +398,9 @@ class ExecCode:
             return [result, output]
 
         def _execute(self, tempfolder, classname, input):
-            'For internal use. Executes the java source code.'
+            """
+            For internal use, executes the java source code.
+            """
             output = ''
             if ExecCode._which('java') == None:
                 # The Java VM could not be found
@@ -353,7 +408,7 @@ class ExecCode:
                 self._set_submission_status('OK', 1, 0)
             else:
                 # The Java VM is present
-                self._time_start = time.time()
+                self._time_start = time()
                 # Execute the compiled code as a subprocess
                 program = Popen(
                     ['java', classname], shell=False, cwd=tempfolder, 
@@ -378,13 +433,13 @@ class ExecCode:
                         line = output_queue.get_nowait()
                     except Empty:
                         # No output, wait a bit and check again
-                        time.sleep(0.1)
+                        sleep(0.1)
                         result = program.returncode
                     else:
                         # We caught some output, so record it
                         output += line
                     # Check how long the program's been running for
-                    exectime = time.time() - self._time_start
+                    exectime = time() - self._time_start
                     if exectime >= self._maxexectime:
                         # Too long!
                         self._timelimitexceeded = True
@@ -395,16 +450,19 @@ class ExecCode:
                 result = program.returncode
                 if result == None:
                     result = 0
-                self._time_end = time.time()
+                self._time_end = time()
             return [result, output.decode("utf-8"), error.decode("utf-8")]
 
         # From http://stackoverflow.com/questions/375427/non-blocking-
         # read-on-a-subprocess-pipe-in-python
         @staticmethod
         def _enqueue_output(out, queue):
-                for line in iter(out.readline, b''):
-                    queue.put(line)
-                out.close()
+            """
+            For internal use, stores output generated by execution.
+            """
+            for line in iter(out.readline, b''):
+                queue.put(line)
+            out.close()
 
 
 #program = ExecCode('build', 'CourseworkTask1')
@@ -416,7 +474,7 @@ class ExecCode:
 #status = -1;
 #wait_time = 0
 #while status != 0:
-#    time.sleep(wait_time)
+#    sleep(wait_time)
 #    wait_time = 0.1
 #    response = program.getSubmissionStatus('', '', '')
 #    status = ExecCode.get_value(response, 'status')
