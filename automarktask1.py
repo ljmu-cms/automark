@@ -71,43 +71,56 @@ class Automark(automark.Automark):
         """
         Checks whether outputs generated conform to the task requirements.
         """
+        # Read in the inputs used
         width = inputs[1]
         height = inputs[2]
         depth = inputs[3]
+        # Initialise the output checks
         output_check = [False, False]
         output_score = 0
+        # Remove any blank lines from the outputs
         output = re.sub("\n\s*\n*", "\n", output)
         lines = output.splitlines()
         volume = -1
         concat = ''
         execution_comments = ''
 
+        # Determine the correct values that should have been output
         correct_volume = (width * height * depth)
         correct_concat = '{:d}{:d}{:d}'.format(width, height, depth)
+        # Search for the correct values in the output
         volume_found = False
         concat_found = False
         for line in lines:
+            # Search for number sequences in the output
             if re.search(r'\d+', line) != None:
                 volume = int(re.search(r'\d+', line).group())
                 if (volume == correct_volume):
+                    # It matches the correct volume
                     volume_found = True
+            # Search for number sequences in the output
             if re.search(r'\d+', line) != None:
                 concat = re.search(r'\d+', line).group()
                 if (concat == correct_concat):
+                    # It matches the correct concatenated string
                     concat_found = True
 
         if volume_found:
+            # The correct volume was found
             output_score += 1
             output_check[0] = True
         else:
+            # The correct volume was missing, so provide some feedback
             execution_comments += (
                 'Volume calculated incorrectly '
                 '(should be {:d} for these inputs).\n').format(correct_volume)
 
         if concat_found:
+            # The concatenation was found
             output_score += 1
             output_check[1] = True
         else:
+            # The concatenation was missing, so provide some feedback
             execution_comments += (
                 'Number strings concatenated incorrectly '
                 '(should be {} for these inputs).\n').format(correct_concat)
@@ -120,6 +133,7 @@ class Automark(automark.Automark):
         """
         output_score = 0
         if ExecCode.response_check_compiled(result):
+            # The code compiled without errors
             output_score += 2.5
         return output_score
 

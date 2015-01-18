@@ -94,6 +94,8 @@ def check_comment_quality(
 	last_comment_line = 0
 	comment_count = len(block_comments)
 	if comment_count > 0:
+		# Check through each of the comments and calculate the average
+		# size of the gap between them
 		gap_sum = 0
 		previous_end = 0
 		for block_comment in block_comments:
@@ -101,9 +103,14 @@ def check_comment_quality(
 			    program, block_comment.start()) - previous_end
 			previous_end = _line_from_character_no_space(
 			    program, block_comment.end()) + 1
+		# Don't forget the gap at the end
 		gap_sum += len(program.program_lines) - previous_end
+		# Calculate the average
 		comment_gap_average = gap_sum / float(comment_count)
 
+		# Check through each of the comments and calculate the average
+		# of the sum squared of the gap between them. This will allow 
+		# us to calculate the standard deviation.
 		gap_sum_squared = 0.0
 		previous_end = 0
 		for block_comment in block_comments:
@@ -112,19 +119,26 @@ def check_comment_quality(
 			    comment_gap_average)**2.0
 			previous_end = _line_from_character_no_space(
 			    program, block_comment.end()) + 1
+		# Don't forget the gap at the end
 		gap_sum_squared += ((len(program.program_lines) - 
 		    previous_end) - comment_gap_average)**2.0
+		# Calculate the standard deviation
 		comment_gap_sd = (gap_sum_squared / comment_count)**0.5
-		
+
+        # Determine where the last comment is in the code. This can be used 
+        # to annotate the code with a suitable message about poor comments
+        # on the feedback sheet		
 		last_comment_line = _line_from_character(
 		    program, block_comments[comment_count - 1].end())
 
+    # Calculate some statistics based on the results
 	comment_frequency = max(1.0 - ((max(
 	    comment_gap_average - ave_offset, 0.0)) * ave_weight), 0.0)
 	comment_consistency = max(1.0 - ((max(
 	    comment_gap_sd - sd_offset, 0.0)) * 1.0), 0.0)
 	comment_score = int(round(comment_frequency + comment_consistency))
 
+    # Generate some feedback comments based on the results
 	if comment_frequency < frequency_threshold:
 		error_list.append(
 		    [last_comment_line, 'Try to include more comments in your code'])
@@ -132,6 +146,7 @@ def check_comment_quality(
 		error_list.append(
 		    [last_comment_line, 'Include comments evenly throughout your '
 		    'code, not just in a few places'])
+
 	return [comment_score, comment_gap_average, comment_gap_sd, error_list]
 
 

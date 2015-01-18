@@ -45,7 +45,9 @@ def _substring(line, tab, start):
         True if the next block matches the sequence exactly.
     """
     match = True
+    # Don't even bother if the line is too short
     if (len(tab) + start) <= len(line):
+        # Check whether there is a single tab at this point
         for position in range(0, len(tab)):
             if line[start + position] != tab[position]:
                 match = False
@@ -82,16 +84,23 @@ def _check_indentation_type(program, tab, notab):
     line_num = 0
     first_error = 0
     for line in program.program_lines:
+        # Change the indentation level based on the number of braces
         add = line.count('{') * tabsize
         sub = line.count('}') * tabsize
         tabs = 0
-        #while line[tabs] == '\t':
+        # Check whether there are enough tabs
         while _substring(line, tab, tabs):
             tabs += tabsize
         indent -= sub
+        # If the number of tabs doesn't match the indent level, register
+        # an error. Note we also need to check there isn't excess
+        # whitespace after the indentation
         if (indent != tabs) or ((len(line) > tabs) and (line[tabs] == notab)):
             indentation_errors += 1
             if indentation_errors <= 1:
+                # This is the first error, so record the line it occured
+                # on. This is so we can add a comment into the code for the
+                # feedback sheet
                 first_error = line_num
             indent = tabs
         indent += add
@@ -118,16 +127,22 @@ def check_indentation(program, thresholdlower, thresholdupper):
         based no the threshold values, and an error list to offer as 
         feedback.
     """
+    # Test out several different tab types. We'll end up using the tab type
+    # that generates the fewest errors
     indent_errors = []
     indent_errors.append(_check_indentation_type(program, '\t', ' '))
     indent_errors.append(_check_indentation_type(program, '  ', '\t'))
     indent_errors.append(_check_indentation_type(program, '   ', '\t'))
     indent_errors.append(_check_indentation_type(program, '    ', '\t'))
 
+    # Pick out the version with the fewest errors. We have to establish
+    # both the minimum error and which type of tab was used so we can 
+    # correctly determine where to place the feedback comment
     min_error, min_error_index = min((val, idx) for (idx, val) in enumerate(
         indent_errors))
     indentation_errors = min_error[0]
 
+    # Calculate the mark received based on the thresholds provided
     error_list = []
     indentatino_score = 0
     if indentation_errors <= thresholdupper:
@@ -136,6 +151,7 @@ def check_indentation(program, thresholdlower, thresholdupper):
         indentatino_score += 0.5
 
     if indentation_errors > thresholdlower:
+        # Output some feedback text
         error_list.append(
             [program.line_number[min_error[1]], 'Indentation errors'])
 

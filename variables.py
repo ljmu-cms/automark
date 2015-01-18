@@ -39,36 +39,45 @@ def check_variable_name_quality(program, threshold):
         too short, the number of variables that look enumerated, and a list 
         of errors to offer as feedback.
     """
+    # Search the AST for any variable declarations
 	find_vars = Variable_Visitor()
 	if program.program_tree != None:
 		program.program_tree.accept(find_vars)
 	variable_short = 0
 	variable_enumeration = 0
 	
+	# Check each of the variable names to check their quality
 	error_list = []
 	strike = 0
 	name = ''
 	for variable in find_vars.variables:
 		name = variable[0]
 		if len(name) > 0:
+		    # Quality variable names will be more than 3 characters long
 			if len(name) < 3:
 				variable_short += 1
 				strike += 1
 				if (strike == threshold):
+				    # Too many strikes, so we generate some error text
 					error_list.append(
 					    [variable[1], 'Use variable names that represent '
 					    'what they\'re being used for'])
+		    # Quality variable names will not have numbers affixed
 			if search(r'\d+', name) != None:
+                # Test whether the name ends with a number
 				if int(search(r'\d+', name).group()) > 0:
 					variable_enumeration += 1
 					strike += 1
 					if (strike == threshold):
+    				    # Too many strikes, so we generate some error text
 						error_list.append(
 						    [variable[1], 'Avoid using sequentially '
 						    'numbered variables names'])
+    # Calculate the mark based on how many poorly named variables were found
 	variables_score = 1
 	if strike >= threshold:
 		variables_score = 0
+
 	return [variables_score, variable_short, variable_enumeration, error_list]
 
 
@@ -102,6 +111,7 @@ class Variable_Visitor(Visitor):
 		#   element.type, element.variable_declarators[0].variable.name, 
 		#   element.variable_declarators[0].variable.lineno)
 		self.variables.append(
+            # Store the variable name and the line number the code occurs
 		    [element.variable_declarators[0].variable.name, 
 		    element.variable_declarators[0].variable.lineno])
 		return True

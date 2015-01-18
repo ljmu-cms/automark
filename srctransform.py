@@ -63,18 +63,30 @@ def load_source(filename):
     lines_read = 1
     lines_added = 0
     character_pos = 0
+    # Read in thee file a line at a time
     with open(filename) as file:
         for line in file.xreadlines():
+            # Remove the package identifier (it'll cause problems for 
+            # compilation).
             if not line.startswith('package '):
+                # Ensure the class is called Main
                 if (not found_main) and (line.find('public class') >= 0):
                     line = sub(r'(class\s*).*?($|\s|{)', r'\1Main\2', line)
                     found_main = True
+                # Switch any javax.swing imports to use uk.ac.ljmu.automark
+                # instead. This allows us to switch GUI inputs and outputs 
+                # use stdin and stdout respectively.
                 line = sub(
                     r'(import\s*)javax.swing.', r'\1uk.ac.ljmu.automark.', 
                     line)
+                # Remove any blank lines. They'll distort the comment gap
+                # average and standard deviation calculations
                 if not (line.isspace() or (len(line) == 0)):
                     program += line
                     line_number.append(lines_read)
+                    # Keep track of the original vs. the transformed line 
+                    # numbers, so that any feedback comments can be referred
+                    # to the correct line
                     line_character_start.append(character_pos)
                     lines_added += 1
                     character_pos += len(line)
@@ -87,6 +99,7 @@ def load_source(filename):
     parser = Parser()
     program_tree = parser.parse_string(full_program)
 
+    # Store all of the various ways of interpreting the program code
     program_structure = Program(
         program, program_lines, full_program, program_tree, line_number, 
         line_character_start)

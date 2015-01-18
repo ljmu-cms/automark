@@ -108,6 +108,7 @@ class BatchMark(object):
         #username to firstname lastname map/dictionary
         self._name_map = {}
         self._construct_name_map()
+        # Output the headers to the summary output csv file
         with open(self._summary_out, 'w') as self._summary:
             self._output_csv_co(
                 ['Username', 'Name'])
@@ -126,12 +127,16 @@ class BatchMark(object):
         """
         archive_file = ''
         for check_dir, _, file in os.walk(student_dir):
+            # Ensure we don't search through metadata folders
             if '__MACOSX' not in check_dir.split('/'):
+                # This is a folder to check
                 for file_name in file:
                     if file_name.endswith('.zip'):
+                        # This is a zip archive, so record it
                         archive_file = os.path.join(check_dir, file_name)
         if archive_file != '':
             with ZipFile(archive_file ,'r') as archive:
+                # Extract everything from the archive
                 archive.extractall(student_dir)
                 archive.close()
         else:
@@ -148,6 +153,7 @@ class BatchMark(object):
             self._summary.write(str(item))
             self._summary.write('\"')
             if count < (len(items) - 1):
+                # Don't put a comma after the last item
                 self._summary.write(', ')
             count += 1
 
@@ -175,9 +181,12 @@ class BatchMark(object):
         """
         java_file = ''
         for check_dir, _, file in os.walk(directory):
+            # Ensure we don't search through metadata folders
             if '__MACOSX' not in check_dir.split('/'):
+                # This is a folder to check
                 for file_name in file:
                     if file_name.endswith('.java'):
+                        # This is a Java file, so record it
                         java_file = os.path.join(check_dir, file_name)
         return java_file
 
@@ -189,10 +198,12 @@ class BatchMark(object):
         summary file.
         """
         print
+        # Cycle through each of the student directories
         for student_dir, _, file in os.walk(self._marking_dir):
             student_dir_name = os.path.relpath(student_dir, self._marking_dir)
 
-            #print student_dir
+            # Other than the base folder, check the folder name against 
+            # the list of usernames in the Excel sheet
             if (student_dir_name is not '.') and (
                     student_dir_name in self._name_map):
                 print 'Student: {}'.format(student_dir_name)
@@ -206,8 +217,10 @@ class BatchMark(object):
                         student_dir, student_dir_name, student_name)
                 else:
                     #print 'file: {}'.format(java_path)
+                    # Actually perform the automarking process
                     marks = self._task_specific.Automark(
                         java_path, 'credentials.txt', self._buid_dir)
+                    # Output the results to the summary csv file
                     self._write_details_to_document(
                         student_dir, student_dir_name, student_name, marks)
                     self._write_comments_to_document(
@@ -220,9 +233,6 @@ class BatchMark(object):
                         marks.get_internal_stats())
                     self._output_csv_nl(
                         marks.get_output_checks())
-
-                #just do something extra
-                #self._unzip_submission(student_dir)
 
     def _write_details_to_document(
             self, student_dir, student_dir_name, student_name, marks):
@@ -238,22 +248,26 @@ class BatchMark(object):
             '<task>', str(self._task))
         self._feedback_document.tables[0].cell(1,0).text = student_name
         self._feedback_document.tables[0].cell(1,1).text = student_dir_name
+        # There is no marker now!
         #self._feedback_document.tables[0].cell(1,2).text = self._marker_name
         self._feedback_document.tables[0].cell(1,2).text = 'auto'
         #print student_dir+'/'+filename
         # Clear tables
         for row in range(1,16):
             self._feedback_document.tables[2].cell(row, 2).text = ''
-    
+ 
+        # Get the marks to provide as feedback
         execution_score = marks.get_execution_score()
         indentation_score = marks.get_indentation_score()
         variables_score = marks.get_variables_score()
         comment_score = marks.get_comment_score()
         total_score = marks.get_total_score()
+        # Split the execution score into requirements and efficiency
         efficient_score = 0
         if execution_score > 4:
             efficient_score = 1
             execution_score -= 1
+        # Output the info to the marks table in the feedback sheet
         self._feedback_document.tables[2].cell(
             (2 + int(execution_score)), 2).text = '{:g}'.format(
             execution_score)
@@ -266,8 +280,10 @@ class BatchMark(object):
         self._feedback_document.tables[2].cell(
             13 + int(comment_score), 2).text = str(comment_score)
 
+        # Output the total score to the marks table in the feedback sheet
         self._feedback_document.tables[2].cell(
             16, 2).text = '{:g}'.format(total_score)
+        # Save the resulting feedback sheet
         self._feedback_document.save(student_dir+'/../'+filename)
 
     def _write_student_name_to_document(
@@ -295,27 +311,33 @@ class BatchMark(object):
             self._feedback_doc_name).replace('username', student_dir_name)
 
         feedback_document = Document(student_dir+'/../'+filename)
+
+        # Add the headings
         feedback_document.add_heading('Program Comments', 2)
 
         feedback_document.add_heading('Program input', 3)
         inputs = marks.get_input().splitlines()
 
+        # Output the inputs past to the program
         for line in inputs:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
+        # Output any extra inputs passed to the program if there are any
         extra_program_inputs = marks.get_extra_program_inputs()
         for extra in extra_program_inputs:
             feedback_document.add_heading(extra[0], 3)
             extra_lines = extra[1].splitlines()
             for line in extra_lines:
                 feedback_document.add_paragraph(line, style='CodeChunk')
-    
+
+        # Output the outputs generated by the program    
         feedback_document.add_heading('Program output', 3)
 
         output = marks.get_output().splitlines()
         for line in output:
             feedback_document.add_paragraph(line, style='CodeChunk')
 
+        # Output any extra outputs generated by the program if there are any
         extra_program_outputs = marks.get_extra_program_outputs()
         for extra in extra_program_outputs:
             feedback_document.add_heading(extra[0], 3)
@@ -323,12 +345,14 @@ class BatchMark(object):
             for line in extra_lines:
                 feedback_document.add_paragraph(line, style='CodeChunk')
 
+        # Output any comments concerning the execution and output correctness
         feedback_document.add_heading('Execution comments', 3)
 
         comments = marks.get_execution_comments().splitlines()
         for line in comments:
             feedback_document.add_paragraph(line, style='CodeChunkComment')
 
+        # Output an annotated copy of the code
         feedback_document.add_heading('Your code', 3)
         program = marks.get_full_program().splitlines()
         comments = marks.get_error_list()
@@ -336,10 +360,13 @@ class BatchMark(object):
         for line in program:
             line_encoded = line.decode('ascii', 'replace')
             highlight = False
+            # Chech whether there are any comments associated with this line 
+            # of code
             for comment in comments:
                 if comment[0] == line_num:
                     highlight = True
             if highlight:
+                # Add the comments straight after the relevant line of code
                 feedback_document.add_paragraph(
                     str(line_num) + '\t: ' + \
                     line_encoded, style='CodeChunkHighlight')
@@ -348,14 +375,19 @@ class BatchMark(object):
                         feedback_document.add_paragraph(
                             '\t  ' + comment[1], style='CodeChunkComment')
             else:
+                # Add in just the line of code
                 feedback_document.add_paragraph(
                     str(line_num) + '\t: ' + line_encoded, style='CodeChunk')
             line_num += 1
         for comment in comments:
+            # Output any comments that relate to the code, but not to any 
+            # particular line (e.g. if there are no comments at all in the 
+            # code).
             if comment[0] == 0:
                 feedback_document.add_paragraph(
                     '\t  ' + comment[1], style='CodeChunkComment')
 
+        # Save the resulting feedback file out
         feedback_document.save(student_dir+'/../'+filename)
 
     def _construct_name_map(self):
@@ -367,6 +399,8 @@ class BatchMark(object):
         username_index = 0
         is_constructing_name_map = False
 
+        # Create a list of usernames and the real names they're associated
+        # with. The details are extracted from the input Excel file provided
         for i in range(self._marking_sheet.nrows):
             if is_constructing_name_map:
                 username =  self._marking_sheet.row_values(i)[username_index]
@@ -430,6 +464,7 @@ if __name__ == "__main__":
         args.details, args.summary)
     batchmark.go()
 
+    # Output the time taken for perforance testing
     end = time()
     duration = end - start
     print 'Time taken: {}'.format(duration)

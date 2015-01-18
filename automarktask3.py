@@ -96,6 +96,7 @@ class Automark(automark.Automark):
         num_of_ships = randint(5,9)
         ship_ids = []
         journey_ids = []
+        # Add a section for each ship
         for ship in range(0, num_of_ships):
             ship_id = u'Boat{:d}ID'.format(randint(1000,9999))
             ship_ids.append(ship_id)
@@ -108,10 +109,12 @@ class Automark(automark.Automark):
             crew_num = randint(1, 10)
             input_contents += '{:d}\n'.format(crew_num)
             journey_cost = 0
+            # Add a number for each crew member
             for crew_member in range(0, crew_num):
                 rate = randint(20, 100) / 2.0
                 input_contents += '{:.1f}\n'.format(rate)
                 journey_cost += rate * journey_length
+            # End each section with a newline
             input_contents += '\n'
             journey_costs.append(journey_cost)
 
@@ -119,15 +122,19 @@ class Automark(automark.Automark):
         recommended_max = int ((journey_costs[int (num_of_ships / 2)] + 
             journey_costs[int (num_of_ships / 2) + 1]) / 2.0)
 
+        # If the build folder doesn't exist, create it
         if not os.path.exists(self._build_dir):
             os.makedirs(self._build_dir)
 
+        # Create the input file
         file_to_write = os.path.join(self._build_dir, "input.txt")
         with open(file_to_write, 'w') as input_file:
             input_file.write(input_contents)
 
+        # Create the value to be passed on stdin
         stdin = '{:d}\n'.format(recommended_max)
 
+        # Describe the extra input so it can be shown on the feedback sheet
         self._extra_program_input.append(
             ['Input from input.txt', input_contents])
 
@@ -173,6 +180,8 @@ class Automark(automark.Automark):
         #print journey_ids_output
         #print journey_ids
 
+        # Check whether the number of ships mentioned matches the number of 
+        # ships expected. All ships should be mentioned
         if len(ship_ids_output) >= len(ship_ids):
             ships_match = True
             for ship_id in range(0, len(ship_ids)):
@@ -181,6 +190,8 @@ class Automark(automark.Automark):
         else:
             ships_match = False
 
+        # Journey IDs may have been used instead of ship IDs, so we need to 
+        # check them as well
         if len(journey_ids_output) >= len(journey_ids):
             journeys_match = True
             for journey_id in range(0, len(journey_ids)):
@@ -189,6 +200,10 @@ class Automark(automark.Automark):
         else:
             journeys_match = False
 
+        # Perform checks on stdout
+
+        # Store the section titles depending on whether ship IDs or journey 
+        # IDs were used
         if journeys_match:
             sections = list(journey_ids)
 
@@ -197,6 +212,7 @@ class Automark(automark.Automark):
 
         console_ships_match = ships_match or journeys_match
 
+        # Output some feedback based on the result
         if console_ships_match:
             execution_comments += ("You've correctly output all the ship "
                 "journeys to the console.\n")
@@ -212,26 +228,36 @@ class Automark(automark.Automark):
             journey_costs_int = [int(x) for x in journey_costs]
             correct_cost_count = Automark._check_existence_in_sections(
                 output, sections, journey_costs_int)
+            # We need some text at the end that will never match
+            # This is a bit of a risk: someone may have used the word
+            # in their output, but we cross our fingers and hope not
             sections.append('defenestrate')
             section = 0
             current = sections[section]
             next = sections[section + 1]
             legal_found = False
             for line in output_lines:
+                # Check whether we should move into the next section
                 if re.search(next, line):
+                    # Move to the next section
                     if legal_found:
                         correct_legality_count += 1
                     section += 1
                     current = next
                     next = sections[section + 1]
+                # Check whether there's some mention of whether the 
+                # route is valid or not
                 legal = Automark._check_legal(line)
                 if legal[0] and (legal[1] == (
                         journey_costs[section] <= recommended_max)):
+                    # Found the correct value in this section
                     legal_found = True;
 
             if legal_found:
+                # Found the correct value in the last section
                 correct_legality_count += 1
 
+        # Generate some feedback based on the results
         if correct_cost_count == num_of_ships:
             execution_comments += ('You correctly calculated and output all '
                 'of the journey costs to the console.\n')
@@ -296,14 +322,18 @@ class Automark(automark.Automark):
             execution_comments += ('Your program didn\'t correctly determine '
                 'and output this.\n')
 
-        #print '************************* STDOUT *************************'
+        # It can be useful to display the output for manual checking
         #print Automark.clean_text(output)
 
-        #print '*************************  FILE  *************************'
+        # Perform checks on the data output to the output.txt file
+
+        # Load in the output file
         file_to_read = os.path.join(self._build_dir, "output.txt")
         with open(file_to_read) as output_file:
             file_output = output_file.read()
         file_output = Automark.clean_text(file_output)
+
+        # It can be useful to display the output file for manual checking
         #print file_output
 
         # Search for ship names and ensure they're in the right order
@@ -326,6 +356,8 @@ class Automark(automark.Automark):
         journey_ids_output = [ x for x in journey_ids_output_dup if not (
             x in seen or seen_add(x))]
 
+        # Check whether either the ship IDs or journey IDs for all the 
+        # viable journeys appear in the output file
         viable_ships_match = False
         if viable_ship_ids == ship_ids_output:
             viable_ships_match = True
@@ -334,6 +366,8 @@ class Automark(automark.Automark):
         if viable_journey_ids == journey_ids_output:
             viable_journeys_match = True
 
+        # Store the section titles depending on whether ship IDs or journey 
+        # IDs were used
         if viable_journeys_match:
             sections = list(viable_journey_ids)
 
@@ -342,6 +376,7 @@ class Automark(automark.Automark):
 
         file_ships_match = viable_ships_match or viable_journeys_match
 
+        # Output some feedback based on the result
         if file_ships_match:
             execution_comments += ('Your program correctly listed the ships '
                 'within cost in your output file.\n')
@@ -363,6 +398,7 @@ class Automark(automark.Automark):
                 'costs for {:d} out of {:d} of these ships.\n').format(
                 viable_correct_cost_count, len(viable_journey_costs))
 
+        # Calculate the mark based on the outputs that were found
         output_score = 0
 
         if console_ships_match:
@@ -383,6 +419,7 @@ class Automark(automark.Automark):
         if viable_correct_cost_count == viable_ship_num:
             output_score += 0.2
 
+        # Describe the extra output so it can be shown on the feedback sheet
         self._extra_program_output.append(
             ['Output to wagedaily.txt', file_output])
 
@@ -400,6 +437,7 @@ class Automark(automark.Automark):
         """
         output_score = 0
         if ExecCode.response_check_compiled(result):
+            # The code compiled without errors
             output_score += 1.5
         return output_score
 
@@ -446,11 +484,15 @@ class Automark(automark.Automark):
         found_legal = False
         legal_result = False
 
+        # Search for keywords that suggest the route has been identified 
+        # as being viable
         found = Automark._find_keywords(line, legal_words)
         if found:
             legal_result = True
             found_legal = True
 
+        # Search for keywords that suggest the route has been identified 
+        # as not being viable
         found = Automark._find_keywords(line, illegal_words)
         if found:
             legal_result = False
@@ -465,6 +507,7 @@ class Automark(automark.Automark):
         
         Return True if any of the keywords are there, False otherwise.
         """
+        # Cycle through every keyword and check whether each occurs
         found = False
         for keyword in words:
             if re.search(re.escape(keyword), line, re.IGNORECASE) != None:
@@ -492,6 +535,9 @@ class Automark(automark.Automark):
         correct_count = 0
         output_lines = output.splitlines()
 
+        # We need some text at the end that will never match
+        # This is a bit of a risk: someone may have used the word
+        # in their output, but we cross our fingers and hope not
         sections.append('defenestrate')
         section = 0
         current = sections[section]
@@ -499,15 +545,18 @@ class Automark(automark.Automark):
         found = False
         for line in output_lines:
             if re.search(next, line):
+                # Move to the next section
                 if found:
                     correct_count += 1
                 section += 1
                 current = next
                 next = sections[section + 1]
             if re.search(str(check_list[section]), line):
+                # Found the correct value in this section
                 found = True
 
         if found:
+            # Found the correct value in the last section
             correct_count += 1
 
         return correct_count
@@ -543,6 +592,8 @@ class InstanceCreationParam_Visitor(Visitor):
         Record the details for the class instantiation.
         """
         if element.type.name.value == self._class_name:
+            # Store the relevant parameter and the line number the code 
+            # occurs
             param = [element.arguments[self._param_num].value, element.lineno]
             self._params.append(param)
         return True

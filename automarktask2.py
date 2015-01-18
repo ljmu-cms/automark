@@ -84,13 +84,20 @@ class Automark(automark.Automark):
         container_width = randint(3, 10)
         container_height = randint(3, 10)
         container_weight = randint(3, 20)
+        # Calculate the weight based on the number of ccontainers that
+        # can be stored in the hold. Note that this value is incorrect, 
+        # since it basically assumes containers are maleable. However, 
+        # it's the method everyone seemed to use, and was given the 
+        # marks in practice, so we go with it
         ship_max_weight = (trunc ((
             ship_length * ship_width * ship_height) / (container_length * 
             container_width * container_height)) * container_weight) + 1
 
+        # If the build folder doesn't exist, create it
         if not os.path.exists(self._build_dir):
             os.makedirs(self._build_dir)
 
+        # Create the file with the input values
         input_contents = (
             '{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n{:d}\n').format(
             ship_length, ship_width, ship_height, container_length, 
@@ -100,6 +107,9 @@ class Automark(automark.Automark):
         with open(file_to_write, 'w') as input_file:
             input_file.write(input_contents)
 
+        # Replicate the file on stdin. We shouldn't really do this, but 
+        # it provides an extra check in case the implementation missed
+        # that an external file should be used
         stdin = input_contents
 
         return [stdin, ship_length, ship_width, ship_height, container_length, 
@@ -122,9 +132,12 @@ class Automark(automark.Automark):
         output_check = [False, False, False, False, False]
         output_score = 0
 
+        # Remove any blank lines from the output
         output = re.sub("\n\s*\n*", "\n", output)
         lines = output.splitlines()
     
+        # Calculate the correct values (at least 'correct' for the
+        # the purposes of the task)
         ship_volume = ship_length * ship_height * ship_width
         container_volume = (
             container_length * container_height * container_width)
@@ -134,23 +147,30 @@ class Automark(automark.Automark):
 
         execution_comments = ''
 
+        # Search for the correct values in the output 
         ship_volume_found = False
         container_volume_found = False
         container_max_found = False
         container_weight_found = False
         for line in lines:
+            # Find any number sequences in the outputs
             if re.search(r'\d+', line) != None:
                 number = int(re.search(r'\d+', line).group())
                 if number == ship_volume:
+                    # The number matches the ship volume
                     ship_volume_found = True
                 if number == container_volume:
+                    # The number matches the container volume
                     container_volume_found = True
                 if number == container_max:
+                    # The number matches the number of containers
                     container_max_found = True
                 if number == container_weight:
+                    # The number matches the final weight of cargo
                     container_weight_found = True
 
-        # Check the last line
+        # Check the last line to establish whether the ship was determined
+        # to be seaworthy or not
         legal_words = ['legal', 'under', 'less', 'below', 'safe', 'lighter']
         illegal_words = ['illegal', 'over', 'more', 'above', 'unsafe', 
             'heavier', 'greater', 'higher', 'too']
@@ -158,6 +178,7 @@ class Automark(automark.Automark):
         found_legal = False
         legal_result = False
 
+        # Check for words indicating that the ship was deemed seaworthy
         if len(lines) > 0:
             line = lines[len(lines) - 1]
             found = self._find_keywords(line, legal_words)
@@ -168,6 +189,7 @@ class Automark(automark.Automark):
                 legal_result = True
                 found_legal = True
 
+        # Check for words indicating the ship was deemed to be too heavy
         if len(lines) > 0:
             line = lines[len(lines) - 1]
             found = self._find_keywords(line, illegal_words)
@@ -178,6 +200,8 @@ class Automark(automark.Automark):
                 legal_result = False
                 found_legal = True
 
+        # Generate feedback and accumulate marks depending on which values 
+        # were found in the output
         if ship_volume_found:
             output_score += 0.2
             output_check[0] = True
@@ -244,6 +268,7 @@ class Automark(automark.Automark):
         """
         output_score = 0
         if ExecCode.response_check_compiled(result):
+            # The code compiled without errors
             output_score += 1.7
         return output_score
 
@@ -276,6 +301,7 @@ class Automark(automark.Automark):
         
         Return True if any of the keywords are there, False otherwise.
         """
+        # Cycle through every keyword and check whether each occurs
         found = False
         for keyword in words:
             if re.search(re.escape(keyword), line) != None:
@@ -309,6 +335,8 @@ class FileReader_Visitor(Visitor):
         Record the details of the FileReader instantiation.
         """
         if element.type.name.value == 'FileReader':
+            # Store the first parameter (filename) and the line number
+            # the code occurs
             filename = [element.arguments[0].value, element.lineno]
             self.filename.append(filename)
         return True
