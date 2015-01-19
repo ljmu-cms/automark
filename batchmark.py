@@ -27,6 +27,7 @@ import automark
 import automarktask1
 import automarktask2
 import automarktask3
+import automarktask4
 
 from argparse import ArgumentParser
 from docx import Document
@@ -87,7 +88,7 @@ class BatchMark(object):
         self._summary_out = summary_out
 
         # Select the appropriate task
-        tasks = [automark, automarktask1, automarktask2, automarktask3]
+        tasks = [automark, automarktask1, automarktask2, automarktask3, automarktask4]
         if (self._task < len(tasks)) and (self._task >= 0):
             self._task_specific = tasks[self._task]
         else:
