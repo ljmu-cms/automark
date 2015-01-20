@@ -38,7 +38,7 @@ class Automark(automark.Automark):
     performed by the marking process. These will be output individually 
     to the summary csv file.
     """
-    OUTPUT_CHECKS = 0
+    OUTPUT_CHECKS = 3
 
     def __init__(self, filename, credentials_file, build_dir):
         """
@@ -242,6 +242,8 @@ class Automark(automark.Automark):
             execution_comments += "All transactions correctly executed.\n"
         else:
             execution_comments += "Only {} out of {} transactions correctly executed.\n".format(self_.account_number, self._password)
+
+        output_score += 2.0 * (good_transactions / len(transactions))
         
         self.section_balance(sections[section])
         section += 1
@@ -252,6 +254,12 @@ class Automark(automark.Automark):
             execution_comments += "Last six logged transactions output correctly.\n"
         else:
             execution_comments += "Only {} out of 6 logged transactions output correctly.\n".format(found_count)
+
+        output_score += 2.0 * (found_count / 6.0)
+
+        output_score = round(output_score * 2.0) / 2.0
+
+        output_check = [section_num, good_transactions, found_count]
 
         return [output_score, execution_comments, output_check]
 

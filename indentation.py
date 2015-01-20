@@ -92,6 +92,10 @@ def _check_indentation_type(program, tab, notab):
         while _substring(line, tab, tabs):
             tabs += tabsize
         indent -= sub
+        # If it's a case statement, we let anything go
+        if line.find('case') >= 0:
+            indent = tabs
+        
         # If the number of tabs doesn't match the indent level, register
         # an error. Note we also need to check there isn't excess
         # whitespace after the indentation
