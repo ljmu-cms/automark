@@ -18,7 +18,7 @@ import os
 import re
 
 from random import randint
-from plyjext.model import Visitor
+from plyjext.model import Visitor, Literal
 
 import automark
 from execcode import ExecCode
@@ -61,12 +61,35 @@ class Automark(automark.Automark):
         Generates random values to pass via the input.txt file and stdin.
         """
         # Find the username, password and account name
+	    find_vars = Field_Visitor()
+	    if self._program_structure.program_tree != None:
+		    self._program_structure.program_tree.accept(find_vars)
+
+        username = ""
+        password = ""
+        account_number = ""
+        for var in find_vars.variables:
+            if re.search(re.escape("pass"), var[1], re.IGNORECASE) != None:
+                password = var[2].strip('"')
+            if re.search(re.escape("name"), var[1], re.IGNORECASE) != None:
+                username = var[2].strip('"')
+            if re.search(re.escape("number"), var[1], re.IGNORECASE) != None:
+                account_number = var[2].strip('"')
+
+
+        print username
+        print password
+        print account_number
+
+
+
 
         # Establish the name of the account input/output file
         # Establish the name of the transaction input/output file
 
         # Create the value to be passed on stdin
-        stdin = '\n'
+        stdin = "{}\n{}\n".format(account_number, password)
+        stdin += "3\n4\n"
 
         return [stdin]
 
@@ -74,6 +97,7 @@ class Automark(automark.Automark):
         """
         Checks whether outputs generated conform to the task requirements.
         """
+        print output
         output_score = 0
         execution_comments = ''
         output_check = []
@@ -153,5 +177,84 @@ class InstanceCreationParam_Visitor(Visitor):
         Return the parameters found when checking the AST.
         """
         return self._params
+
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
+class Variable_Visitor(Visitor):
+    """
+    Find names of variales declared in the AST.
+    
+    Visitor for checking the Java AST for any variable declarations. 
+    If they exist, the name of the variable is recorded, along with the 
+    line number it was declared on.
+    """
+
+	def __init__(self, verbose=False):
+        """
+        Initialise the Variable_Visitor class.
+        
+        Attributes:
+        verbose: True if the results are to be output directly.
+        """
+		super(Variable_Visitor, self).__init__()
+		self.variables = []
+
+	def leave_VariableDeclaration(self, element):
+        """
+        Record the details of the variable declaration.
+        """
+		#msg = 'Variable type ({}); name ({}); line no ({})'
+		#print msg.format(
+		#   element.type, element.variable_declarators[0].variable.name, 
+		#   element.variable_declarators[0].variable.lineno)
+		self.variables.append(
+            # Store the variable name and the line number the code occurs
+		    [element.variable_declarators[0].variable.name, 
+		    element.variable_declarators[0].variable.lineno, ])
+		print "{} {}".format(element.modifiers, element.variable_declarators[0].variable.name)
+		return True
+
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
+class Field_Visitor(Visitor):
+    """
+    Find names of fields declared in the AST.
+    
+    Visitor for checking the Java AST for any variable declarations. 
+    If they exist, the name of the variable is recorded, along with the 
+    line number it was declared on.
+    """
+
+	def __init__(self, verbose=False):
+        """
+        Initialise the Variable_Visitor class.
+        
+        Attributes:
+        verbose: True if the results are to be output directly.
+        """
+		super(Field_Visitor, self).__init__()
+		self.variables = []
+
+	def leave_FieldDeclaration(self, element):
+        """
+        Record the details of the field declaration.
+        """
+		#msg = 'Variable type ({}); name ({}); line no ({})'
+		#print msg.format(
+		#   element.type, element.variable_declarators[0].variable.name, 
+		#   element.variable_declarators[0].variable.lineno)
+
+        # Establish the value the field is assigned to if it exists
+		value = "";
+		if isinstance(element.variable_declarators[0].initializer, Literal):
+		    value = element.variable_declarators[0].initializer.value
+
+        # Store the variable name and the line number the code occurs
+		self.variables.append(
+		    [element.modifiers, element.variable_declarators[0].variable.name, value, 
+		    element.variable_declarators[0].variable.lineno, ])
+		#print "{} {} = {}".format(element.modifiers, element.variable_declarators[0].variable.name, value)
+		return True
+
 
 
