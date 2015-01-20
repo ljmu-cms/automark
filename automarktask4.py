@@ -65,20 +65,20 @@ class Automark(automark.Automark):
 	    if self._program_structure.program_tree != None:
 		    self._program_structure.program_tree.accept(find_vars)
 
-        username = ""
-        password = ""
-        account_number = ""
+        self._username = ""
+        self._password = ""
+        self._account_number = ""
         for var in find_vars.variables:
             if re.search(re.escape("pass"), var[1], re.IGNORECASE) != None:
-                password = var[2].strip('"')
+                self._password = var[2].strip('"')
             if re.search(re.escape("name"), var[1], re.IGNORECASE) != None:
-                username = var[2].strip('"')
+                self._username = var[2].strip('"')
             if re.search(re.escape("number"), var[1], re.IGNORECASE) != None:
-                account_number = var[2].strip('"')
+                self._account_number = var[2].strip('"')
 
-        print username
-        print password
-        print account_number
+        #print self._username
+        #print self._password
+        #print self._account_number
 
         # Clear out the folder
         # Remove any files with .txt or .dat extensions
@@ -94,51 +94,204 @@ class Automark(automark.Automark):
 
         # Create the value to be passed on stdin
         stdin = ""
+        menus = 0
 
         # Login to the account system
-        stdin += "{}\n{}\n".format(account_number, password)
+        stdin += "{}\n{}\n".format(self._account_number, self._password)
+        menus += 1
 
         # Output the current balance
         stdin += "3\n"
+        menus += 1
 
+        transactions = []
         # Perform seven 1 unit transactions
         for trans_num in range(0, 7):
             stdin += "1\n"
+            menus += 1
             transfer = 1
+            transactions.append(transfer)
             stdin += "{:d}\n".format(transfer)
 
         # Perform six random transactions
         for trans_num in range(0, 6):
             stdin += "1\n"
+            menus += 1
             transfer = randint(1 + trans_num, 1 + (trans_num * 2))
+            transactions.append(transfer)
             stdin += "{:d}\n".format(transfer)
 
         # Perform a large transaction
         stdin += "1\n"
+        menus += 1
         transfer = 1000000
+        transactions.append(transfer)
         stdin += "{:d}\n".format(transfer)
 
         # Output the current balance
         stdin += "3\n"
+        menus += 1
 
         # Output recent transactions
         stdin += "2\n"
+        menus += 1
 
         # Logout
         stdin += "4\n"
 
-        return [stdin]
+        return [stdin, transactions, menus]
 
     def check_output_correctness(self, output, inputs):
         """
         Checks whether outputs generated conform to the task requirements.
         """
-        print output
+        transactions = inputs[1]
+        menus = inputs[2]
         output_score = 0
         execution_comments = ''
         output_check = []
+        
+        # Figure out a line from the menu
+        output_lines = output.splitlines()
+        line_num = 0
+        found_menu_start = False
+        menu_start = ""
+        while (line_num < len(output_lines)) and not found_menu_start:
+            menu_start = output_lines[line_num]
+            if len(menu_start) > 3:
+                found = 0
+                for line in output_lines:
+                    if menu_start == line:
+                        found += 1
+                if found >= (menus - 1):
+                    #print menu_start
+                    found_menu_start = True
+            line_num += 1
+
+        line_num = len(output_lines) - 1
+        menu_end = ""
+        found_menu_end = False
+        while (line_num >= 0) and not found_menu_end:
+            menu_end = output_lines[line_num]
+            if re.search(r'\d+', menu_end) != None:
+                option = int(re.search(r'\d+', menu_end).group())
+                if (len(menu_end) > 3) and (option >= 0) and (option <= 10):
+                    found = 0
+                    for line in output_lines:
+                        if menu_end == line:
+                            found += 1
+                    if found >= (menus - 1):
+                        #print menu_end
+                        found_menu_end = True
+            line_num -= 1
+            
+        # Split the output into sections
+        section_num = 0
+        sections = []
+        sections.append([])
+        in_menu = False
+        for line in output_lines:
+            if line == menu_start:
+                in_menu = True
+            if not in_menu:
+                sections[section_num].append(line)
+            if line == menu_end:
+                section_num += 1
+                sections.append([])
+                in_menu = False
+
+        #print "Sections: {}, Menus: {}".format(section_num, menus)
+        if section_num < 5:
+            execution_comments += "Failed to log in to account {} with password {}.\n".format(self._account_number, self._password)
+            execution_comments += "Account name: {}.\n".format(self._username)
+        else:
+            execution_comments += "Successfully logged in to account {} with password {}.\n".format(self._account_number, self._password)
+            execution_comments += "Account name: {}.\n".format(self._username)
+
+        section = 1
+        balance = self.section_balance(sections[section])
+        section += 1
+
+        good_transactions = 0
+        log = []
+        transaction = 0
+        for trans_num in range(0, 7):
+            balance = self.transfer(balance, transactions[transaction], log)
+            transaction += 1
+            found = self.section_transaction(sections[section], balance)
+            if found:
+                good_transactions += 1
+            section += 1
+        
+        for trans_num in range(0, 6):
+            balance = self.transfer(balance, transactions[transaction], log)
+            transaction += 1
+            found = self.section_transaction(sections[section], balance)
+            if found:
+                good_transactions += 1
+            section += 1
+
+        balance = self.transfer(balance, transactions[transaction], log)
+        transaction += 1
+        found = self.section_transaction(sections[section], balance)
+        if found:
+            good_transactions += 1
+        section += 1
+
+        if good_transactions == len(transactions):
+            execution_comments += "All transactions correctly executed.\n"
+        else:
+            execution_comments += "Only {} out of {} transactions correctly executed.\n".format(self_.account_number, self._password)
+        
+        self.section_balance(sections[section])
+        section += 1
+
+        found_count = self.section_recent(sections[section], log[::-1])
+        section += 1
+        if found_count >= 6:
+            execution_comments += "Last six logged transactions output correctly.\n"
+        else:
+            execution_comments += "Only {} out of 6 logged transactions output correctly.\n".format(found_count)
 
         return [output_score, execution_comments, output_check]
+
+    def transfer(self, balance, amount, log):
+        if balance >= amount:
+            balance -= amount
+            log.append(balance)
+        return balance
+
+    def section_balance(self, lines):
+        balance = 0
+        for line in lines:
+            number = re.search(r'\d+', line)
+            if number != None:
+                found_number = int(number.group())
+                if found_number != int(self._account_number):
+                    balance = found_number
+        return balance
+
+    def section_transaction(self, lines, balance):
+        found = False
+        for line in lines:
+            number = re.search(r'\d+', line)
+            if number != None:
+                found_number = int(number.group())
+                if found_number == balance:
+                    found = True
+        return found
+
+    def section_recent(self, lines, log):
+        found_count = 0
+        log_index = 0
+        for line in lines:
+            found = line.find(str(log[log_index]))
+            if found < 0:
+                found = line.find(str(log[6 - log_index]))
+            if found >= 0:
+                log_index += 1
+                found_count += 1
+        return found_count
 
     def check_execute_result(self, result):
         """
