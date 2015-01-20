@@ -76,20 +76,56 @@ class Automark(automark.Automark):
             if re.search(re.escape("number"), var[1], re.IGNORECASE) != None:
                 account_number = var[2].strip('"')
 
-
         print username
         print password
         print account_number
 
-
+        # Clear out the folder
+        # Remove any files with .txt or .dat extensions
+        for file in os.listdir(self._build_dir):
+            extension = os.path.splitext(file)[1]
+            if (extension == '.txt') or (extension == '.dat'):
+                path = os.path.join(self._build_dir, file)
+                os.remove(path)
 
 
         # Establish the name of the account input/output file
         # Establish the name of the transaction input/output file
 
         # Create the value to be passed on stdin
-        stdin = "{}\n{}\n".format(account_number, password)
-        stdin += "3\n4\n"
+        stdin = ""
+
+        # Login to the account system
+        stdin += "{}\n{}\n".format(account_number, password)
+
+        # Output the current balance
+        stdin += "3\n"
+
+        # Perform seven 1 unit transactions
+        for trans_num in range(0, 7):
+            stdin += "1\n"
+            transfer = 1
+            stdin += "{:d}\n".format(transfer)
+
+        # Perform six random transactions
+        for trans_num in range(0, 6):
+            stdin += "1\n"
+            transfer = randint(1 + trans_num, 1 + (trans_num * 2))
+            stdin += "{:d}\n".format(transfer)
+
+        # Perform a large transaction
+        stdin += "1\n"
+        transfer = 1000000
+        stdin += "{:d}\n".format(transfer)
+
+        # Output the current balance
+        stdin += "3\n"
+
+        # Output recent transactions
+        stdin += "2\n"
+
+        # Logout
+        stdin += "4\n"
 
         return [stdin]
 
