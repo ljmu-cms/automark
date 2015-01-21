@@ -234,8 +234,8 @@ class Automark(automark.Automark):
         found_count = 0
         logged_in = False
         if section_num < 5:
-            execution_comments += ("Log to account {} attempted with 
-                password {}.\n").format(self._account_number, self._password)
+            execution_comments += ("Log to account {} attempted with "
+                "password {}.\n").format(self._account_number, self._password)
             execution_comments += "Account name: {}.\n".format(self._username)
             execution_comments += ("Failed to login or couldn't complete all "
                 "{:d} of the operations.\n").format(menus)
