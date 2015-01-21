@@ -234,11 +234,14 @@ class Automark(automark.Automark):
         found_count = 0
         logged_in = False
         if section_num < 5:
-            execution_comments += "Log to account {} attempted with password {}.\n".format(self._account_number, self._password)
+            execution_comments += ("Log to account {} attempted with 
+                password {}.\n").format(self._account_number, self._password)
             execution_comments += "Account name: {}.\n".format(self._username)
-            execution_comments += "Failed to login or couldn't complete all {:d} of the operations.\n".format(menus)
+            execution_comments += ("Failed to login or couldn't complete all "
+                "{:d} of the operations.\n").format(menus)
         else:
-            execution_comments += "Successfully logged in to account {} with password {}.\n".format(self._account_number, self._password)
+            execution_comments += ("Successfully logged in to account {} with "
+                "password {}.\n").format(self._account_number, self._password)
             execution_comments += "Account name: {}.\n".format(self._username)
             logged_in = True
 
@@ -249,7 +252,8 @@ class Automark(automark.Automark):
             log = []
             transaction = 0
             for trans_num in range(0, 7):
-                balance = self.transfer(balance, transactions[transaction], log)
+                balance = self.transfer(balance, transactions[transaction], 
+                    log)
                 transaction += 1
                 found = self.section_transaction(sections[section], balance)
                 if found:
@@ -257,7 +261,8 @@ class Automark(automark.Automark):
                 section += 1
             
             for trans_num in range(0, 6):
-                balance = self.transfer(balance, transactions[transaction], log)
+                balance = self.transfer(balance, transactions[transaction], 
+                    log)
                 transaction += 1
                 found = self.section_transaction(sections[section], balance)
                 if found:
@@ -274,9 +279,12 @@ class Automark(automark.Automark):
             if good_transactions == len(transactions):
                 execution_comments += "All transactions correctly executed.\n"
             else:
-                execution_comments += "Only {} out of {} transactions correctly executed.\n".format(good_transactions, len(transactions))
+                execution_comments += ("Only {} out of {} transactions "
+                    "correctly executed.\n").format(good_transactions, 
+                    len(transactions))
 
-            output_score += 2.0 * (float(good_transactions) / float(len(transactions)))
+            output_score += 2.0 * (float(good_transactions) / 
+                float(len(transactions)))
             
             self.section_balance(sections[section])
             section += 1
@@ -284,9 +292,11 @@ class Automark(automark.Automark):
             found_count = self.section_recent(sections[section], log[::-1])
             section += 1
             if found_count >= 6:
-                execution_comments += "Last six logged transactions output correctly.\n"
+                execution_comments += ("Last six logged transactions output "
+                    "correctly.\n")
             else:
-                execution_comments += "Only {} out of 6 logged transactions output correctly.\n".format(found_count)
+                execution_comments += ("Only {} out of 6 logged transactions "
+                    "output correctly.\n").format(found_count)
 
             output_score += 2.0 * (float(found_count) / 6.0)
 
@@ -458,9 +468,10 @@ class Variable_Visitor(Visitor):
 
             # Store the variable name and the line number the code occurs
 		self.variables.append(
-		    [element.modifiers, element.variable_declarators[0].variable.name, value,
-		    element.variable_declarators[0].variable.lineno])
-		#print "{} {} {}".format(element.modifiers, element.variable_declarators[0].variable.name, value)
+		    [element.modifiers, element.variable_declarators[0].variable.name, 
+		    value, element.variable_declarators[0].variable.lineno])
+		#print "{} {} {}".format(element.modifiers, 
+		#    element.variable_declarators[0].variable.name, value)
 		return True
 
 # This doesn't confirm to PEP 8, but has been left to match 
@@ -500,9 +511,10 @@ class Field_Visitor(Visitor):
 
         # Store the variable name and the line number the code occurs
 		self.variables.append(
-		    [element.modifiers, element.variable_declarators[0].variable.name, value, 
-		    element.variable_declarators[0].variable.lineno])
-		#print "{} {} = {}".format(element.modifiers, element.variable_declarators[0].variable.name, value)
+		    [element.modifiers, element.variable_declarators[0].variable.name, 
+		    value, element.variable_declarators[0].variable.lineno])
+		#print "{} {} = {}".format(element.modifiers, 
+		#    element.variable_declarators[0].variable.name, value)
 		return True
 
 # This doesn't confirm to PEP 8, but has been left to match 

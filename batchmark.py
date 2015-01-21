@@ -88,7 +88,8 @@ class BatchMark(object):
         self._summary_out = summary_out
 
         # Select the appropriate task
-        tasks = [automark, automarktask1, automarktask2, automarktask3, automarktask4]
+        tasks = [automark, automarktask1, automarktask2, automarktask3, 
+            automarktask4]
         if (self._task < len(tasks)) and (self._task >= 0):
             self._task_specific = tasks[self._task]
         else:
@@ -446,7 +447,8 @@ if __name__ == "__main__":
         default='./build')
     parser.add_argument(
         '-t', '--template', metavar='TEMPLATE', type=str, 
-        help='Word feedback sheeet template (default ./feedback_username.docx)', 
+        help='Word feedback sheeet template (default '
+            './feedback_username.docx)', 
         default='./feedback_username.docx')
     parser.add_argument(
         '-d', '--details', metavar='DETAILS', type=str, 
