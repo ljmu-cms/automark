@@ -151,7 +151,7 @@ class BatchMark(object):
         count = 0
         for item in items:
             self._summary.write('\"')
-            self._summary.write(str(item))
+            self._summary.write(str(item).replace('"', "'"))
             self._summary.write('\"')
             if count < (len(items) - 1):
                 # Don't put a comma after the last item

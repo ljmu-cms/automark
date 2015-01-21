@@ -24,6 +24,7 @@ import automark
 from execcode import ExecCode
 from comments import check_comment_quality
 from indentation import check_indentation
+from variables import check_variable_name_quality
 
 __all__ = ('Automark')
 
@@ -73,8 +74,26 @@ class Automark(automark.Automark):
                 self._password = var[2].strip('"')
             if re.search(re.escape("name"), var[1], re.IGNORECASE) != None:
                 self._username = var[2].strip('"')
-            if re.search(re.escape("number"), var[1], re.IGNORECASE) != None:
+            if re.search(re.escape("numb"), var[1], re.IGNORECASE) != None:
                 self._account_number = var[2].strip('"')
+
+        #print self._username
+        #print self._password
+        #print self._account_number
+	    find_vars = Variable_Visitor()
+	    if self._program_structure.program_tree != None:
+		    self._program_structure.program_tree.accept(find_vars)
+
+        for var in find_vars.variables:
+            if not self._password:
+                if re.search(re.escape("pass"), var[1], re.IGNORECASE) != None:
+                    self._password = var[2].strip('"')
+            if not self._username:
+                if re.search(re.escape("name"), var[1], re.IGNORECASE) != None:
+                    self._username = var[2].strip('"')
+            if not self._account_number:
+                if re.search(re.escape("numb"), var[1], re.IGNORECASE) != None:
+                    self._account_number = var[2].strip('"')
 
         #print self._username
         #print self._password
@@ -87,6 +106,16 @@ class Automark(automark.Automark):
             if (extension == '.txt') or (extension == '.dat'):
                 path = os.path.join(self._build_dir, file)
                 os.remove(path)
+
+        # Create a port-account.txt file
+        file_to_write = os.path.join(self._build_dir, "port-account.txt")
+        with open(file_to_write, 'w') as input_file:
+            input_file.write("1000\n")
+
+        # Create a transaction-list.txt file
+        file_to_write = os.path.join(self._build_dir, "transaction-list.txt")
+        with open(file_to_write, 'w') as input_file:
+            input_file.write("")
 
 
         # Establish the name of the account input/output file
@@ -201,63 +230,67 @@ class Automark(automark.Automark):
                 in_menu = False
 
         #print "Sections: {}, Menus: {}".format(section_num, menus)
+        good_transactions = 0
+        found_count = 0
+        logged_in = False
         if section_num < 5:
-            execution_comments += "Failed to log in to account {} with password {}.\n".format(self._account_number, self._password)
+            execution_comments += "Log to account {} attempted with password {}.\n".format(self._account_number, self._password)
             execution_comments += "Account name: {}.\n".format(self._username)
+            execution_comments += "Failed to login or couldn't complete all {:d} of the operations.\n".format(menus)
         else:
             execution_comments += "Successfully logged in to account {} with password {}.\n".format(self._account_number, self._password)
             execution_comments += "Account name: {}.\n".format(self._username)
+            logged_in = True
 
-        section = 1
-        balance = self.section_balance(sections[section])
-        section += 1
+            section = 1
+            balance = self.section_balance(sections[section])
+            section += 1
 
-        good_transactions = 0
-        log = []
-        transaction = 0
-        for trans_num in range(0, 7):
+            log = []
+            transaction = 0
+            for trans_num in range(0, 7):
+                balance = self.transfer(balance, transactions[transaction], log)
+                transaction += 1
+                found = self.section_transaction(sections[section], balance)
+                if found:
+                    good_transactions += 1
+                section += 1
+            
+            for trans_num in range(0, 6):
+                balance = self.transfer(balance, transactions[transaction], log)
+                transaction += 1
+                found = self.section_transaction(sections[section], balance)
+                if found:
+                    good_transactions += 1
+                section += 1
+
             balance = self.transfer(balance, transactions[transaction], log)
             transaction += 1
             found = self.section_transaction(sections[section], balance)
             if found:
                 good_transactions += 1
             section += 1
-        
-        for trans_num in range(0, 6):
-            balance = self.transfer(balance, transactions[transaction], log)
-            transaction += 1
-            found = self.section_transaction(sections[section], balance)
-            if found:
-                good_transactions += 1
+
+            if good_transactions == len(transactions):
+                execution_comments += "All transactions correctly executed.\n"
+            else:
+                execution_comments += "Only {} out of {} transactions correctly executed.\n".format(good_transactions, len(transactions))
+
+            output_score += 2.0 * (float(good_transactions) / float(len(transactions)))
+            
+            self.section_balance(sections[section])
             section += 1
 
-        balance = self.transfer(balance, transactions[transaction], log)
-        transaction += 1
-        found = self.section_transaction(sections[section], balance)
-        if found:
-            good_transactions += 1
-        section += 1
+            found_count = self.section_recent(sections[section], log[::-1])
+            section += 1
+            if found_count >= 6:
+                execution_comments += "Last six logged transactions output correctly.\n"
+            else:
+                execution_comments += "Only {} out of 6 logged transactions output correctly.\n".format(found_count)
 
-        if good_transactions == len(transactions):
-            execution_comments += "All transactions correctly executed.\n"
-        else:
-            execution_comments += "Only {} out of {} transactions correctly executed.\n".format(self_.account_number, self._password)
+            output_score += 2.0 * (float(found_count) / 6.0)
 
-        output_score += 2.0 * (good_transactions / len(transactions))
-        
-        self.section_balance(sections[section])
-        section += 1
-
-        found_count = self.section_recent(sections[section], log[::-1])
-        section += 1
-        if found_count >= 6:
-            execution_comments += "Last six logged transactions output correctly.\n"
-        else:
-            execution_comments += "Only {} out of 6 logged transactions output correctly.\n".format(found_count)
-
-        output_score += 2.0 * (found_count / 6.0)
-
-        output_score = round(output_score * 2.0) / 2.0
+            output_score = round(output_score * 2.0) / 2.0
 
         output_check = [section_num, good_transactions, found_count]
 
@@ -333,6 +366,19 @@ class Automark(automark.Automark):
         self._error_list.extend(result[3])
         return comment_score
 
+    def check_variable_name_quality(self):
+        """
+        Assigns marks based on variable quality.
+        """
+        result = check_variable_name_quality(
+            self._program_structure, 5)
+        variables_score = result[0]
+        self._variable_short = result[1]
+        self._variable_enumeration = result[2]
+        self._error_list.extend(result[3])
+        return variables_score
+
+
 # This doesn't confirm to PEP 8, but has been left to match 
 # Java and the PLYJ API
 class InstanceCreationParam_Visitor(Visitor):
@@ -404,11 +450,17 @@ class Variable_Visitor(Visitor):
 		#print msg.format(
 		#   element.type, element.variable_declarators[0].variable.name, 
 		#   element.variable_declarators[0].variable.lineno)
-		self.variables.append(
+
+        # Establish the value the field is assigned to if it exists
+		value = "";
+		if isinstance(element.variable_declarators[0].initializer, Literal):
+		    value = element.variable_declarators[0].initializer.value
+
             # Store the variable name and the line number the code occurs
-		    [element.variable_declarators[0].variable.name, 
-		    element.variable_declarators[0].variable.lineno, ])
-		print "{} {}".format(element.modifiers, element.variable_declarators[0].variable.name)
+		self.variables.append(
+		    [element.modifiers, element.variable_declarators[0].variable.name, value,
+		    element.variable_declarators[0].variable.lineno])
+		#print "{} {} {}".format(element.modifiers, element.variable_declarators[0].variable.name, value)
 		return True
 
 # This doesn't confirm to PEP 8, but has been left to match 
@@ -449,9 +501,43 @@ class Field_Visitor(Visitor):
         # Store the variable name and the line number the code occurs
 		self.variables.append(
 		    [element.modifiers, element.variable_declarators[0].variable.name, value, 
-		    element.variable_declarators[0].variable.lineno, ])
+		    element.variable_declarators[0].variable.lineno])
 		#print "{} {} = {}".format(element.modifiers, element.variable_declarators[0].variable.name, value)
 		return True
 
+# This doesn't confirm to PEP 8, but has been left to match 
+# Java and the PLYJ API
+class Assignment_Visitor(Visitor):
+    """
+    Find names of fields declared in the AST.
+    
+    Visitor for checking the Java AST for any variable declarations. 
+    If they exist, the name of the variable is recorded, along with the 
+    line number it was declared on.
+    """
+
+	def __init__(self, verbose=False):
+        """
+        Initialise the Variable_Visitor class.
+        
+        Attributes:
+        verbose: True if the results are to be output directly.
+        """
+		super(Assignment_Visitor, self).__init__()
+		self.variables = []
+
+	def leave_Assignment(self, element):
+        """
+        Record the details of the field declaration.
+        """
+		#msg = 'Variable type ({}); name ({}); line no ({})'
+		#print msg.format(
+		#   element.type, element.variable_declarators[0].variable.name, 
+		#   element.variable_declarators[0].variable.lineno)
+
+        # Establish the value the field is assigned to if it exists
+		value = "";
+		print "{} {} {}".format(element.lhs, element.operator, element.rhs)
+		return True
 
 
