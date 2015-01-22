@@ -283,7 +283,7 @@ class Automark(automark.Automark):
                     "correctly executed.\n").format(good_transactions, 
                     len(transactions))
 
-            output_score += 2.0 * (float(good_transactions) / 
+            output_score += 0.5 * float(len(transactions)) * (float(good_transactions) / 
                 float(len(transactions)))
             
             self.section_balance(sections[section])
@@ -298,9 +298,13 @@ class Automark(automark.Automark):
                 execution_comments += ("Only {} out of 6 logged transactions "
                     "output correctly.\n").format(found_count)
 
-            output_score += 2.0 * (float(found_count) / 6.0)
+            output_score += 3.0 * (float(found_count) / 6.0)
+            
+            output_score += 0.5 * float(section_num)
 
             output_score = round(output_score * 2.0) / 2.0
+            
+            output_score = max(min(output_score, 6.0), 0.0)
 
         output_check = [section_num, good_transactions, found_count]
 
@@ -351,14 +355,14 @@ class Automark(automark.Automark):
         output_score = 0
         if ExecCode.response_check_compiled(result):
             # The code compiled without errors
-            output_score += 1.0
+            output_score += 1.5
         return output_score
 
     def check_indentation(self):
         """
         Assigns marks based on indentation quality.
         """
-        result = check_indentation(self._program_structure, 7, 23)
+        result = check_indentation(self._program_structure, 7, 39)
         self._indentation_errors = result[0]
         indentation_score = result[1]
         self._error_list.extend(result[2])
@@ -369,7 +373,7 @@ class Automark(automark.Automark):
         Assigns marks based on comment quality.
         """
         result = check_comment_quality(
-            self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.06)
+            self._program_structure, 0.75, 0.75, 1.0, 4.0, 0.01)
         comment_score = result[0]
         self._comment_gap_average = result[1]
         self._comment_gap_sd = result[2]
