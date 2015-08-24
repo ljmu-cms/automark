@@ -60,7 +60,7 @@ optional arguments:
 The automark tool uses python 2.7, along with the following additional requirements:
 
 1. Python package [xlrd](https://pypi.python.org/pypi/xlrd).
-1. Python package [python-docx](https://pypi.python.org/pypi/docx).
+1. Python package [python-docx](https://python-docx.readthedocs.org/en/latest/).
 1. Python package [PLY](https://github.com/dabeaz/ply).
 1. [JDK](http://www.oracle.com/technetwork/java/index.html) (javac compiler and VM).
 1. Python package [SOAPpy](https://pypi.python.org/pypi/SOAPpy) if (optionally) using [Sphere Engine](http://ideone.com/sphere-engine)
