@@ -14,6 +14,7 @@ All variables declarations are found using the AST of the source file.
 Their quality is then checked using length and numerical increment checks. 
 In other words, variables must be at least 3 characters long, and should 
 not be of the form <name><int> (e.g. myVar1).
+This is a git push test.
 """
 
 from re import search
